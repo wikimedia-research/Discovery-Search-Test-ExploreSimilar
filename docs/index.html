@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+<meta name="date" content="2017-08-24" />
+
+<title>DRAFT: Test of the Explore Similar Widget</title>
+
+<script src="index_files/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="index_files/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="index_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="index_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="index_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="index_files/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="index_files/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="index_files/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="index_files/navigation-1.1/tabsets.js"></script>
+<script src="index_files/navigation-1.1/codefolding.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #303030; color: #cccccc; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; }
+td.sourceCode { padding-left: 5px; }
+pre, code { color: #cccccc; background-color: #303030; }
+code > span.kw { color: #f0dfaf; } /* Keyword */
+code > span.dt { color: #dfdfbf; } /* DataType */
+code > span.dv { color: #dcdccc; } /* DecVal */
+code > span.bn { color: #dca3a3; } /* BaseN */
+code > span.fl { color: #c0bed1; } /* Float */
+code > span.ch { color: #dca3a3; } /* Char */
+code > span.st { color: #cc9393; } /* String */
+code > span.co { color: #7f9f7f; } /* Comment */
+code > span.ot { color: #efef8f; } /* Other */
+code > span.al { color: #ffcfaf; } /* Alert */
+code > span.fu { color: #efef8f; } /* Function */
+code > span.er { color: #c3bf9f; } /* Error */
+code > span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
+code > span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
+code > span.sc { color: #dca3a3; } /* SpecialChar */
+code > span.vs { color: #cc9393; } /* VerbatimString */
+code > span.ss { color: #cc9393; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { } /* Variable */
+code > span.cf { color: #f0dfaf; } /* ControlFlow */
+code > span.op { color: #f0efd0; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
+code > span.at { } /* Attribute */
+code > span.do { color: #7f9f7f; } /* Documentation */
+code > span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
+code > span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
+code > span.in { color: #7f9f7f; font-weight: bold; } /* Information */
+div.sourceCode {
+  overflow-x: visible;
+}
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+<style type="text/css">
+  p.abstract{
+    text-align: center;
+    font-weight: bold;
+  }
+  div.abstract{
+    margin: auto;
+    width: 90%;
+  }
+</style>
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3,h4",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = false;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+.tocify-subheader {
+  display: inline;
+}
+.tocify-subheader .tocify-item {
+  font-size: 0.95em;
+}
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="fluid-row" id="header">
+
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">DRAFT: Test of the Explore Similar Widget</h1>
+<h3 class="subtitle"><em>Providing users with related pages, categories and suggested languages in search results</em></h3>
+<h4 class="author"><em>Erik Bernhardson</em></h4>
+<address class="author_afil">
+Senior Software Engineer, Wikimedia Foundation<br><h4 class="author"><em>Jan Drewniak</em></h4>
+<address class="author_afil">
+User Experience Engineer, Wikimedia Foundation<br><h4 class="author"><em>Chelsy Xie</em></h4>
+<address class="author_afil">
+Data Analyst, Wikimedia Foundation<br><h4 class="author"><em>Deb Tankersley</em></h4>
+<address class="author_afil">
+Product Manager (Analysis, Search Frontend), Wikimedia Foundation<br><h4 class="date"><em>24 August 2017</em></h4>
+<div class="abstract">
+<p class="abstract">Abstract</p>
+<p>Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding ‘explore similar’ widget to provide users with related pages, categories and suggested languages in each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar results. Users hover over the ‘Related’ section most often, followed by ‘categories’ and ‘languages’ sections. Since the time users spent on reading the similar information is too short, we doubt that 80% of the hover-overs happened by accident. Our analysis also showed that providing information similar to search results did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users see the simiar results and the feedbacks we got from usertesting.com told us that users thought it is userful, we suggest doing another test which always shows the similar links without hover-on.</p>
+</div>
+
+</div>
+
+
+<script type="text/javascript">
+$(function() {
+  /* Lets the user click on the images to view them in full resolution. */
+  $("div.figure img").wrap(function() {
+    var link = $('<a/>');
+    link.attr('href', $(this).attr('src'));
+    link.attr('title', $(this).attr('alt'));
+    link.attr('target', '_blank');
+    return link;
+  });
+  $("p.abstract").text("Executive Summary");
+  $("div#wmf").wrap('<a href="https://wikimediafoundation.org/" />');
+});
+</script>
+<p>
+{ <a href="https://github.com/wikimedia-research/Discovery-Search-Test-ExploreSimilar/blob/master/docs/index.Rmd">RMarkdown Source</a> | <a href="https://github.com/wikimedia-research/Discovery-Search-Test-ExploreSimilar">Analysis Codebase</a> }
+</p>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>To do (<a href="https://phabricator.wikimedia.org/T149809">Phab ticket</a>)</p>
+<div class="figure" style="text-align: center">
+<img src="index_files/figure-html/example_figure-1.png" alt="**Figure 1**: Example of explore similar widget on English Wikipedia." height="4in" />
+<p class="caption">
+<strong>Figure 1</strong>: Example of explore similar widget on English Wikipedia.
+</p>
+</div>
+<p>On 30 June 2017 we deployed an A/B test on the desktop version of English Wikipedia to assess the efficacy of this feature. The test concluded on 24 July 2017, after a total of 5180 search sessions had been anonymously tracked.</p>
+</div>
+<div id="methods" class="section level1">
+<h1>Methods</h1>
+<p>This test’s event logging (EL) was implemented in JavaScript according to the <a href="https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&amp;oldid=16909631">TestSearchSatisfaction2 (TSS2)</a> schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">import<span class="op">::</span><span class="kw">from</span>(dplyr, group_by, ungroup, <span class="dt">keep_where =</span> filter, mutate, arrange, select, transmute, left_join, summarize, bind_rows, case_when, if_else, rename, tally)
+<span class="kw">library</span>(ggplot2)
+<span class="kw">library</span>(tidyr)</code></pre></div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>1 in 1000 users are included in EventLogging (on enwiki that’s about 2K full-text searchers, according to <a href="https://phabricator.wikimedia.org/T163273">T163273</a>). Of those 1 in 1000 users, 1 in 2 are included in the test (that’s about 1K sessions daily). Of those 1 in 2 users, 50% go in a test group, labeled “explore_similar_test”, and the other 50% of users will go in a control group, labeled “explore_similar_control” (that’s about 500 sessions for each bucket). However, we failed to notice that the sampling didn’t work as we expected – we got only about 100 sessions per day for each bucket. But we’ve got enough data since we ran this test for 25 days.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#De-duplicating events...</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(
+    <span class="dt">timestamp =</span> lubridate<span class="op">::</span><span class="kw">ymd_hms</span>(timestamp),
+    <span class="dt">date =</span> <span class="kw">as.Date</span>(timestamp)
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(session_id, event_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">distinct</span>(session_id, event_id, <span class="dt">.keep_all =</span> <span class="ot">TRUE</span>)
+<span class="kw">rm</span>(events_raw) <span class="co"># to free up memory</span>
+
+<span class="co"># Delete events with negative load time...</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">is.na</span>(load_time) <span class="op">|</span><span class="st"> </span>load_time <span class="op">&gt;=</span><span class="st"> </span><span class="dv">0</span>)
+
+<span class="co"># message(&quot;De-duplicating SERPs...&quot;)</span>
+SERPs &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(<span class="kw">c</span>(session_id, page_id, query_hash, search_token)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(session_id, query_hash) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">serp_id =</span> page_id[<span class="dv">1</span>], <span class="dt">cirrus_id =</span> search_token[<span class="dv">1</span>]) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(<span class="kw">c</span>(page_id, serp_id, cirrus_id))
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">left_join</span>(SERPs, <span class="dt">by =</span> <span class="st">&quot;page_id&quot;</span>)
+<span class="kw">rm</span>(SERPs) <span class="co"># to free up memory</span>
+
+<span class="co"># message(&quot;Removing events without an associated SERP (orphan clicks and check-ins)...&quot;)</span>
+n_evnt &lt;-<span class="st"> </span><span class="kw">nrow</span>(events)
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(<span class="kw">is.na</span>(serp_id) <span class="op">&amp;</span><span class="st"> </span><span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>)))) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove orphan click</span>
+<span class="st">  </span><span class="kw">group_by</span>(session_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">&quot;searchResultPage&quot;</span> <span class="op">%in%</span><span class="st"> </span>event) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove orphan &quot;visitPage&quot; and &quot;checkin&quot;</span>
+<span class="st">  </span>ungroup
+<span class="co"># cat(&quot; Removed &quot;, n_evnt - nrow(events), &quot; orphan (SERP-less) events.&quot;)</span>
+<span class="kw">rm</span>(n_evnt)
+
+<span class="co"># message(&quot;Removing sessions falling into multiple test groups&quot;)</span>
+temp &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(session_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">unique_group =</span> <span class="kw">length</span>(<span class="kw">unique</span>(group)) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>)
+<span class="co"># cat(&quot; Removed &quot;, sum(!temp$unique_group), &quot; sessions falling into multiple test groups.&quot;)</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(session_id <span class="op">%in%</span><span class="st"> </span>temp<span class="op">$</span>session_id[temp<span class="op">$</span>unique_group])
+<span class="kw">rm</span>(temp)
+
+<span class="co"># Number of wikis in the test</span>
+n_wiki &lt;-<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(events<span class="op">$</span>wiki))
+<span class="co"># message(&quot;Number of wikis in the test: &quot;, n_wiki)</span>
+
+<span class="co"># Remove session with more than 50 searches and only serp</span>
+spider_session &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(date, group, session_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">n_search =</span> <span class="kw">length</span>(<span class="kw">unique</span>(serp_id)),
+            <span class="dt">only_serp =</span> <span class="kw">sum</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>) <span class="op">==</span><span class="st"> </span><span class="kw">n</span>() <span class="op">&amp;</span><span class="st"> </span><span class="kw">sum</span>(event_scroll) <span class="op">&lt;</span><span class="st"> </span><span class="dv">1</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(n_search <span class="op">&gt;</span><span class="st"> </span><span class="dv">50</span>, only_serp <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span>{.<span class="op">$</span>session_id}
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(session_id <span class="op">%in%</span><span class="st"> </span>spider_session))
+<span class="co"># cat(&quot; Removed &quot;, length(spider_session), &quot; sessions with more than 50 searches and only serp.&quot;)</span>
+
+<span class="co"># Scroll on serp</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(session_id, page_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">n_scroll_serp =</span> <span class="kw">sum</span>(event_scroll)) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">right_join</span>(events, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;page_id&quot;</span>))
+
+<span class="co"># Rename group</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">group =</span> <span class="kw">ifelse</span>(group <span class="op">==</span><span class="st"> &quot;explore_similar_control&quot;</span>, <span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Test&quot;</span>))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">load</span>(<span class="kw">path</span>(<span class="st">&quot;data/fulltext_from_auto.RData&quot;</span>))
+
+<span class="co"># message(&quot;De-duplicating events...&quot;)</span>
+fulltext_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(
+    <span class="dt">timestamp =</span> lubridate<span class="op">::</span><span class="kw">ymd_hms</span>(timestamp),
+    <span class="dt">date =</span> <span class="kw">as.Date</span>(timestamp),
+    <span class="dt">group =</span> <span class="kw">ifelse</span>(group <span class="op">==</span><span class="st"> &quot;explore_similar_control&quot;</span>, <span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Test&quot;</span>)
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(session_id, event_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">distinct</span>(session_id, event_id, <span class="dt">.keep_all =</span> <span class="ot">TRUE</span>)
+
+<span class="co"># Data summary</span>
+<span class="co"># fulltext_from_auto %&gt;%</span>
+<span class="co">#   group_by(group) %&gt;%</span>
+<span class="co">#   summarize(n_session = length(unique(session_id)), n_serp = length(unique(page_id)))</span>
+
+<span class="co"># message(&quot;Group by SERPs...&quot;)</span>
+serp_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(date, session_id, page_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(wiki, group, session_id, page_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">from_autocomplete =</span> <span class="ot">TRUE</span>, 
+            <span class="dt">max_checkin_serp =</span> <span class="kw">ifelse</span>(<span class="st">&quot;checkin&quot;</span> <span class="op">%in%</span><span class="st"> </span>event, <span class="kw">max</span>(event_checkin, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>), <span class="dv">0</span>),
+            <span class="dt">status =</span> <span class="kw">ifelse</span>(max_checkin_serp <span class="op">==</span><span class="st"> &quot;420&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>)
+  )
+
+<span class="co"># message(&quot;Join with events...&quot;)</span>
+events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">left_join</span>(serp_from_auto, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;group&quot;</span>, <span class="st">&quot;wiki&quot;</span>, <span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;page_id&quot;</span>)) <span class="op">%&gt;%</span>
+<span class="co"># length(unique(events$page_id[events$from_autocomplete == TRUE]))</span>
+<span class="co"># some serp from auto couldn&#39;t find a match because their sessions are identified as spider sessions</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">from_autocomplete =</span> <span class="kw">ifelse</span>(<span class="kw">is.na</span>(from_autocomplete), <span class="ot">FALSE</span>, from_autocomplete))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># message(&quot;Aggregating by search...&quot;)</span>
+searches &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(<span class="kw">is.na</span>(serp_id))) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove visitPage and checkin events</span>
+<span class="st">  </span><span class="kw">arrange</span>(date, session_id, serp_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, wiki, session_id, serp_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(
+    <span class="dt">date =</span> date[<span class="dv">1</span>],
+    <span class="dt">timestamp =</span> timestamp[<span class="dv">1</span>],
+    <span class="dt">from_autocomplete =</span> <span class="kw">sum</span>(from_autocomplete, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>, 
+    <span class="dt">has_scroll_serp =</span> <span class="kw">sum</span>(n_scroll_serp, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>,
+    <span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> =<span class="st"> </span><span class="kw">any</span>(<span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> &quot;TRUE&quot;</span>, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>),
+    <span class="dt">engaged =</span> <span class="kw">any</span>(event <span class="op">!=</span><span class="st"> &quot;searchResultPage&quot;</span>) <span class="op">||</span><span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(page_id[event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>])) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span> <span class="op">||</span><span class="st"> </span><span class="kw">any</span>(has_scroll_serp),
+    <span class="dt">engaged_without_es =</span> <span class="kw">any</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;searchResultPage&quot;</span>, <span class="st">&quot;esclick&quot;</span>, <span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>))) <span class="op">||</span><span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(page_id[event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>])) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>, <span class="co">#|| any(has_scroll_serp),</span>
+    <span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span> =<span class="st"> &quot;click&quot;</span> <span class="op">%in%</span><span class="st"> </span>event,
+    <span class="st">`</span><span class="dt">other clickthrough</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event) <span class="op">&amp;</span><span class="st"> </span>event <span class="op">!=</span><span class="st"> &quot;click&quot;</span>),
+    <span class="st">`</span><span class="dt">no. same-wiki results clicked</span><span class="st">`</span> =<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(event_position[event <span class="op">==</span><span class="st"> &quot;click&quot;</span>])),
+    <span class="st">`</span><span class="dt">first clicked same-wiki results position</span><span class="st">`</span> =<span class="st"> </span><span class="kw">ifelse</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>, event_position[event <span class="op">==</span><span class="st"> &quot;click&quot;</span>][<span class="dv">1</span>], <span class="ot">NA</span>), <span class="co"># event_position is 0-based</span>
+    <span class="st">`</span><span class="dt">max clicked position (same-wiki)</span><span class="st">`</span> =<span class="st"> </span><span class="kw">ifelse</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>, <span class="kw">max</span>(event_position[event <span class="op">==</span><span class="st"> &quot;click&quot;</span>], <span class="dt">na.rm =</span> <span class="ot">TRUE</span>), <span class="ot">NA</span>),
+    <span class="st">`</span><span class="dt">Query score (F=0.1)</span><span class="st">`</span> =<span class="st"> </span><span class="kw">query_score</span>(event_position, <span class="fl">0.1</span>),
+    <span class="st">`</span><span class="dt">Query score (F=0.5)</span><span class="st">`</span> =<span class="st"> </span><span class="kw">query_score</span>(event_position, <span class="fl">0.5</span>),
+    <span class="st">`</span><span class="dt">Query score (F=0.9)</span><span class="st">`</span> =<span class="st"> </span><span class="kw">query_score</span>(event_position, <span class="fl">0.9</span>)
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup
+
+<span class="co"># message(&quot;Processing explore-similar clicks...&quot;)</span>
+esclick_result &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;esclick&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(., <span class="kw">do.call</span>(dplyr<span class="op">::</span>bind_rows, <span class="kw">lapply</span>(.<span class="op">$</span>event_extraParams, parse_extraParams, <span class="dt">action =</span> <span class="st">&quot;esclick&quot;</span>))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(group, wiki, session_id, serp_id, page_id, event_id, hoverId, section, result)
+searches &lt;-<span class="st"> </span>esclick_result <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, wiki, session_id, serp_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">with_esclick =</span> <span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">right_join</span>(searches, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;group&quot;</span>, <span class="st">&quot;wiki&quot;</span>, <span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;serp_id&quot;</span>))
+
+<span class="co"># message(&quot;Processing explore-similar hover events...&quot;)</span>
+hover_over &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(., <span class="kw">do.call</span>(dplyr<span class="op">::</span>bind_rows, <span class="kw">lapply</span>(.<span class="op">$</span>event_extraParams, parse_extraParams, <span class="dt">action =</span> <span class="kw">c</span>(<span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>)))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(timestamp, group, wiki, session_id, serp_id, page_id, event_id, event, hoverId, section, results)
+searches &lt;-<span class="st"> </span>hover_over <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;hover-on&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, wiki, session_id, serp_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">n_hover =</span> <span class="kw">length</span>(<span class="kw">unique</span>(hoverId))) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">right_join</span>(searches, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;group&quot;</span>, <span class="st">&quot;wiki&quot;</span>, <span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;serp_id&quot;</span>))
+
+searches &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">with_esclick =</span> <span class="kw">ifelse</span>(<span class="kw">is.na</span>(with_esclick), <span class="ot">FALSE</span>, with_esclick),
+                <span class="dt">n_hover =</span> <span class="kw">ifelse</span>(<span class="kw">is.na</span>(n_hover), <span class="dv">0</span>, n_hover))</code></pre></div>
+<p>After the test has concluded on 24 July 2017, we processed the collected data and filtered out duplicated events, extraneous search engine result pages (SERPs), events without an associated SERPs, and remove sessions with more than 50 searches but no interaction with the result. This left us with a total of 5136 search sessions (see Table 1 for the full breakdown by group).</p>
+<?xml version="1.0" encoding="UTF-8"?>
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<caption>
+<strong>Table 1</strong>: Number of search sessions used for analysis by group. Each search session may have several individual searches.
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Test group
+</th>
+<th style="text-align:left;">
+wiki
+</th>
+<th style="text-align:left;">
+Search sessions
+</th>
+<th style="text-align:left;">
+Searches recorded
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Control
+</td>
+<td style="text-align:left;">
+enwiki
+</td>
+<td style="text-align:left;">
+2,570
+</td>
+<td style="text-align:left;">
+4,618
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Test
+</td>
+<td style="text-align:left;">
+enwiki
+</td>
+<td style="text-align:left;">
+2,566
+</td>
+<td style="text-align:left;">
+4,719
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Total
+</td>
+<td style="text-align:left;">
+All wikis
+</td>
+<td style="text-align:left;">
+5,136
+</td>
+<td style="text-align:left;">
+9,337
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="results" class="section level1">
+<h1>Results</h1>
+<p>There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, date) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="st">`</span><span class="dt">All Searches</span><span class="st">`</span> =<span class="st"> </span><span class="kw">n</span>(), <span class="st">`</span><span class="dt">Searches with Results</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>), <span class="st">`</span><span class="dt">Searches with Clicks</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>), <span class="st">`</span><span class="dt">Searches with Hover</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">gather</span>(<span class="dt">key=</span>Group, <span class="dt">value =</span> count, <span class="op">-</span>date, <span class="op">-</span>group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x=</span>date, <span class="dt">y=</span>count, <span class="dt">colour=</span>Group)) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">geom_line</span>(<span class="dt">size=</span><span class="fl">1.2</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_x_date</span>(<span class="dt">name =</span> <span class="st">&quot;Date&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_y_continuous</span>(<span class="dt">labels=</span>polloi<span class="op">::</span>compress, <span class="dt">name =</span> <span class="st">&quot;Number of Searches&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">ggtitle</span>(<span class="st">&quot;Daily fulltext searches on desktop&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">facet_wrap</span>(<span class="op">~</span><span class="st"> </span>group, <span class="dt">scales =</span> <span class="st">&quot;free_y&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/daily_searches-1.png" alt="**Figure 2**: Number of all searches, searches with results, searches with clickthrough and searches with hover-over, by day and group." width="\textwidth" />
+<p class="caption">
+<strong>Figure 2</strong>: Number of all searches, searches with results, searches with clickthrough and searches with hover-over, by day and group.
+</p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">zrr &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">zero =</span> <span class="kw">sum</span>(<span class="op">!</span><span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>zero, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  )
+ctr &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">clickthroughs =</span> <span class="kw">sum</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">do</span>(binom<span class="op">::</span><span class="kw">binom.bayes</span>(.<span class="op">$</span>clickthroughs, .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p1 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(date, group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">n_search =</span> <span class="kw">n</span>(), <span class="dt">zero =</span> <span class="kw">sum</span>(<span class="op">!</span><span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>zero, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x =</span> date, <span class="dt">color =</span> group, <span class="dt">y =</span> mean, <span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper)) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_hline</span>(<span class="dt">data =</span> zrr, <span class="kw">aes</span>(<span class="dt">yintercept =</span> mean, <span class="dt">color =</span> group), <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_ribbon</span>(<span class="kw">aes</span>(<span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper, <span class="dt">fill =</span> group), <span class="dt">alpha =</span> <span class="fl">0.1</span>, <span class="dt">color =</span> <span class="ot">NA</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_color_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_fill_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_y_continuous</span>(<span class="st">&quot;Zero Results Rate&quot;</span>, <span class="dt">labels =</span> scales<span class="op">::</span><span class="kw">percent_format</span>()) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme_min</span>()
+p2 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(date, group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">n_search =</span> <span class="kw">n</span>(), <span class="dt">clickthroughs =</span> <span class="kw">sum</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>clickthroughs, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x =</span> date, <span class="dt">color =</span> group, <span class="dt">y =</span> mean, <span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper)) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_hline</span>(<span class="dt">data =</span> ctr, <span class="kw">aes</span>(<span class="dt">yintercept =</span> mean, <span class="dt">color =</span> group), <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_ribbon</span>(<span class="kw">aes</span>(<span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper, <span class="dt">fill =</span> group), <span class="dt">alpha =</span> <span class="fl">0.1</span>, <span class="dt">color =</span> <span class="ot">NA</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_color_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_fill_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_y_continuous</span>(<span class="st">&quot;Clickthrough Rate&quot;</span>, <span class="dt">labels =</span> scales<span class="op">::</span><span class="kw">percent_format</span>()) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme_min</span>()
+cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2) <span class="op">+</span>
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">title =</span> <span class="st">&quot;Daily search-wise zero results rate and clickthrough rates by group&quot;</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/daily_zrr_and_ctr-1.png" alt="**Figure 3**: Daily search-wise zero results rate and clickthrough rates of experimental groups. Dashed lines mark the overall zero results rate and clickthrough rate." width="\textwidth" />
+<p class="caption">
+<strong>Figure 3</strong>: Daily search-wise zero results rate and clickthrough rates of experimental groups. Dashed lines mark the overall zero results rate and clickthrough rate.
+</p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">hover_rate &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">keep_where</span>(group <span class="op">==</span><span class="st"> &quot;Test&quot;</span>, <span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>) <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">hover =</span> <span class="kw">sum</span>(n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>hover, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  )</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(group <span class="op">==</span><span class="st"> &quot;Test&quot;</span>, <span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>) <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">group_by</span>(group, date) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">hover =</span> <span class="kw">sum</span>(n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>hover, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x =</span> date, <span class="dt">color =</span> <span class="st">&quot;#377EB8&quot;</span>, <span class="dt">y =</span> mean, <span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper)) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_hline</span>(<span class="dt">data =</span> hover_rate, <span class="kw">aes</span>(<span class="dt">yintercept =</span> mean, <span class="dt">color =</span> <span class="st">&quot;#377EB8&quot;</span>), <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="co">#9.8%</span>
+<span class="st">  </span><span class="kw">geom_ribbon</span>(<span class="kw">aes</span>(<span class="dt">ymin =</span> lower, <span class="dt">ymax =</span> upper, <span class="dt">fill =</span> <span class="st">&quot;#377EB8&quot;</span>), <span class="dt">alpha =</span> <span class="fl">0.1</span>, <span class="dt">color =</span> <span class="ot">NA</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_color_manual</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">values =</span> <span class="st">&quot;#377EB8&quot;</span>, <span class="dt">labels =</span> <span class="st">&quot;Test&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_fill_manual</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">values =</span> <span class="st">&quot;#377EB8&quot;</span>, <span class="dt">labels =</span> <span class="st">&quot;Test&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_y_continuous</span>(<span class="st">&quot;Hover-over Rate&quot;</span>, <span class="dt">labels =</span> scales<span class="op">::</span><span class="kw">percent_format</span>()) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme_min</span>() <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">title =</span> <span class="st">&quot;Daily search-wise hover-over rates by group&quot;</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/daily_hover_rate-1.png" alt="**Figure 4**: Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate." width="\textwidth" />
+<p class="caption">
+<strong>Figure 4</strong>: Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate.
+</p>
+</div>
+<div id="engagement-with-the-results" class="section level2">
+<h2>Engagement with the results</h2>
+<p>Figure 5 compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn’t lead to higher clickthrough rate.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">searches <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>, n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">clickthroughs =</span> <span class="kw">sum</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">do</span>(binom<span class="op">::</span><span class="kw">binom.bayes</span>(.<span class="op">$</span>clickthroughs, .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">group =</span> <span class="st">&quot;With Hover&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">bind_rows</span>(ctr) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">pointrange_chart</span>(<span class="dt">y_lab =</span> <span class="st">&quot;Clickthrough rate&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Same-wiki clickthrough rates by test group and clickthrough rate among searches with hover-over&quot;</span>,
+                   <span class="dt">subtitle =</span> <span class="st">&quot;With 95% credible intervals.&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>, <span class="dt">clean_xaxis =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/engagement_samewiki-1.png" alt="**Figure 5**: Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over." width="\textwidth" />
+<p class="caption">
+<strong>Figure 5</strong>: Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over.
+</p>
+</div>
+<p>After we show the search result page to a user, if the user doesn’t do anything – no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In Figure 6, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because 1) the control group didn’t track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn’t happen accidently; 2) according to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although Figure 7 shows that the proportion of search result pages with scroll in the test group is not significantly higher.). Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p1 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">abandon =</span> <span class="kw">n</span>() <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(engaged), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>abandon, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">pointrange_chart</span>(<span class="dt">y_lab =</span> <span class="st">&quot;Search Abandon Rate&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Proportion of abandoned searches&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>, <span class="dt">clean_xaxis =</span> <span class="ot">TRUE</span>)
+p2 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">abandon =</span> <span class="kw">n</span>() <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(engaged_without_es), <span class="dt">n_search =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>abandon, <span class="dt">n =</span> .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">pointrange_chart</span>(<span class="dt">y_lab =</span> <span class="st">&quot;Search Abandon Rate&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Proportion of abandoned searches&quot;</span>,
+                   <span class="dt">subtitle =</span> <span class="st">&quot;Excluding hover-over, explore similar clicks and scrolls.&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>, <span class="dt">clean_xaxis =</span> <span class="ot">TRUE</span>)
+cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/search_abandon_rate-1.png" alt="**Figure 6**: Search abandon rate by test group. The graph on the left shows the proportion of searches without any actions on the result page. The right one shows the proportion of searches that have no click, reload or page-turn." width="\textwidth" />
+<p class="caption">
+<strong>Figure 6</strong>: Search abandon rate by test group. The graph on the left shows the proportion of searches without any actions on the result page. The right one shows the proportion of searches that have no click, reload or page-turn.
+</p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">events <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>, <span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">scrolls =</span> <span class="kw">sum</span>(n_scroll_serp <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>), <span class="dt">n_serp =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span>ungroup <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">cbind</span>(
+    <span class="kw">as.data.frame</span>(binom<span class="op">:::</span><span class="kw">binom.bayes</span>(<span class="dt">x =</span> .<span class="op">$</span>scrolls, <span class="dt">n =</span> .<span class="op">$</span>n_serp, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+  ) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">pointrange_chart</span>(<span class="dt">y_lab =</span> <span class="st">&quot;Proportion of SERPs&quot;</span>, 
+                   <span class="dt">title =</span> <span class="st">&quot;Proportion of SERPs with scroll by test group&quot;</span>,
+                   <span class="dt">subtitle =</span> <span class="st">&quot;With 95% credible intervals.&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>, <span class="dt">clean_xaxis =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/scroll_serp-1.png" alt="**Figure 7**: Proportion of search results pages with scroll by test group." width="\textwidth" />
+<p class="caption">
+<strong>Figure 7</strong>: Proportion of search results pages with scroll by test group.
+</p>
+</div>
+<p>Figure 8 shows that the time users spent on search result pages are not significantly different.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>, from_autocomplete <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>, <span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>)
+<span class="co"># cat(&quot;There are&quot;, length(unique(temp$page_id)), &quot;fulltext search result pages from autocomplete.&quot;, </span>
+<span class="co">#     length(unique(temp$page_id[temp$group == &quot;explore_similar_control&quot;])), &quot;of them are in control group and&quot;, </span>
+<span class="co">#     length(unique(temp$page_id[temp$group == &quot;explore_similar_test&quot;])), &quot;of them are in test group.&quot;)</span>
+temp<span class="op">$</span>SurvObj &lt;-<span class="st"> </span><span class="kw">with</span>(temp, survival<span class="op">::</span><span class="kw">Surv</span>(max_checkin_serp, status <span class="op">==</span><span class="st"> </span><span class="dv">2</span>))
+fit &lt;-<span class="st"> </span>survival<span class="op">::</span><span class="kw">survfit</span>(SurvObj <span class="op">~</span><span class="st"> </span>group, <span class="dt">data =</span> temp)
+ggsurv &lt;-<span class="st"> </span>survminer<span class="op">::</span><span class="kw">ggsurvplot</span>(
+  fit,
+  <span class="dt">conf.int =</span> <span class="ot">TRUE</span>,
+  <span class="dt">xlab =</span> <span class="st">&quot;T (Dwell Time in seconds)&quot;</span>,
+  <span class="dt">ylab =</span> <span class="st">&quot;Proportion of SERPs longer than T (P%)&quot;</span>,
+  <span class="dt">surv.scale =</span> <span class="st">&quot;percent&quot;</span>,
+  <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>,
+  <span class="dt">legend =</span> <span class="st">&quot;bottom&quot;</span>,
+  <span class="dt">legend.title =</span> <span class="st">&quot;Group&quot;</span>,
+  <span class="dt">legend.labs =</span> <span class="kw">c</span>(<span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Test&quot;</span>),
+  <span class="dt">ggtheme =</span> <span class="kw">theme_min</span>()
+)
+ggsurv<span class="op">$</span>plot <span class="op">+</span>
+<span class="st">  </span><span class="kw">labs</span>(
+    <span class="dt">title =</span> <span class="st">&quot;Survival curves by test group&quot;</span>,
+    <span class="dt">subtitle =</span> <span class="st">&quot;With 95% confidence intervals.&quot;</span>
+  )</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/serp_survival-1.png" alt="**Figure 8**: Proportion of search results pages from autocomplete last longer than T. Currently we are only able to track the dwell time of search result pages from autocomplete search." width="\textwidth" />
+<p class="caption">
+<strong>Figure 8</strong>: Proportion of search results pages from autocomplete last longer than T. Currently we are only able to track the dwell time of search result pages from autocomplete search.
+</p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rm</span>(temp)</code></pre></div>
+</div>
+<div id="interactions-with-explore-similar-widget" class="section level2">
+<h2>Interactions with explore similar widget</h2>
+<p>There are 723 hover-on actions and Table 2 shows the breakdown by section and number of results shown. 12.7% (92) hovers sees 0 result, most of them are in the “Languages” section. 44.1% (319) hover on the “Related” section, 34% (246) hover on the “Categories” section and 21.9% (158) hover on the “Language” section.</p>
+<?xml version="1.0" encoding="UTF-8"?>
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<caption>
+<strong>Table 2</strong>: Number of hover-on actions by section and number of results shown. For example, there are 2 hovers on the ‘Categories’ section and see 0 result.
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+0 results
+</th>
+<th style="text-align:right;">
+1 result
+</th>
+<th style="text-align:right;">
+2 results
+</th>
+<th style="text-align:right;">
+3 results
+</th>
+<th style="text-align:right;">
+4 results
+</th>
+<th style="text-align:right;">
+5+ results
+</th>
+<th style="text-align:right;">
+Sum
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+categories
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:right;">
+112
+</td>
+<td style="text-align:right;">
+246
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+languages
+</td>
+<td style="text-align:right;">
+83
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+158
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+related
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+312
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+319
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Sum
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:right;">
+47
+</td>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+368
+</td>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+129
+</td>
+<td style="text-align:right;">
+723
+</td>
+</tr>
+</tbody>
+</table>
+<p>Table 3 shows the approximate time users stay on the widget after they hover-on. More than 80% of hover-over last less than 2 seconds, which means they are either not interested in the information or just hover-over by accident.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">hover_over <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(hoverId) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">length</span>(event_id) <span class="op">==</span><span class="st"> </span><span class="dv">2</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="st">`</span><span class="dt">Dwell Time</span><span class="st">`</span> =<span class="st"> </span><span class="kw">difftime</span>(<span class="kw">max</span>(timestamp), <span class="kw">min</span>(timestamp), <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="st">`</span><span class="dt">Dwell Time</span><span class="st">`</span> =<span class="st"> </span><span class="kw">ifelse</span>(<span class="st">`</span><span class="dt">Dwell Time</span><span class="st">`</span> <span class="op">&gt;</span><span class="st"> </span><span class="dv">5</span>, <span class="st">&quot;6+ secs&quot;</span>, <span class="kw">paste</span>(<span class="st">`</span><span class="dt">Dwell Time</span><span class="st">`</span>, <span class="st">&quot;secs&quot;</span>))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(<span class="st">`</span><span class="dt">Dwell Time</span><span class="st">`</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="st">`</span><span class="dt">Number of Hover-over</span><span class="st">`</span> =<span class="st"> </span><span class="kw">n</span>()) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">Proportion =</span> <span class="kw">paste0</span>(<span class="kw">round</span>(<span class="st">`</span><span class="dt">Number of Hover-over</span><span class="st">`</span> <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(<span class="st">`</span><span class="dt">Number of Hover-over</span><span class="st">`</span>) <span class="op">*</span><span class="st"> </span><span class="dv">100</span>, <span class="dv">2</span>), <span class="st">&quot;%&quot;</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">fable</span>(<span class="kw">format_caption</span>(table_caps, <span class="st">&quot;Hover Time&quot;</span>))</code></pre></div>
+<?xml version="1.0" encoding="UTF-8"?>
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<caption>
+<strong>Table 3</strong>: Number of hover-over that stay on the widget for n seconds. For example, there are 196 hover-over actions that stay on the widget for less than 1 seconds. The dwell time is the difference between the timestamp of hover-off and hover-on.
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Dwell Time
+</th>
+<th style="text-align:right;">
+Number of Hover-over
+</th>
+<th style="text-align:left;">
+Proportion
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+0 secs
+</td>
+<td style="text-align:right;">
+196
+</td>
+<td style="text-align:left;">
+50.39%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1 secs
+</td>
+<td style="text-align:right;">
+128
+</td>
+<td style="text-align:left;">
+32.9%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+2 secs
+</td>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:left;">
+8.74%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+3 secs
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:left;">
+2.83%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+4 secs
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+1.03%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+5 secs
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+1.03%
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+6+ secs
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+3.08%
+</td>
+</tr>
+</tbody>
+</table>
+<p>There are only 3 valid clicks on the explore similar results from 3 different sessions. There are 1 click on the first “Related” result and 2 clicks on the second “Related” result.</p>
+<p>Unfortunately, we didn’t record the position of the same-wiki search result when users interact with the explore similar widget.</p>
+</div>
+<div id="return-rate" class="section level2">
+<h2>Return Rate</h2>
+<p>Users may click back to search page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:</p>
+<ul>
+<li>Among users with at least a click in their search, the proportion of searches that return to the same search page</li>
+<li>Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different serp but in the same session)</li>
+</ul>
+<p>From Figure 9, we can see the return rates are not significantly different between groups.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">returnRate_to_same_search &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, serp_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">sum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event)) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># Among search with at least 1 click</span>
+<span class="st">  </span><span class="kw">arrange</span>(group, serp_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">n_click_cumsum =</span> <span class="kw">cumsum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(n_click_cumsum <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># delete serp and hover before first click</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">comeback =</span> <span class="kw">sum</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;searchResultPage&quot;</span>, <span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>)) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> <span class="op">|</span><span class="st"> </span><span class="kw">sum</span>(n_click_cumsum <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># comeback to the same serp or make another click or hover</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">return_to_same_search =</span> <span class="kw">sum</span>(comeback), <span class="dt">n_search =</span> <span class="kw">length</span>(<span class="kw">unique</span>(serp_id))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">do</span>(binom<span class="op">::</span><span class="kw">binom.bayes</span>(.<span class="op">$</span>return_to_same_search, .<span class="op">$</span>n_search, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+
+returnRate_to_other_search &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group, session_id) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">sum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event)) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># Among session with at least 1 click</span>
+<span class="st">  </span><span class="kw">arrange</span>(group, session_id, timestamp) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">n_click_cumsum =</span> <span class="kw">cumsum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(n_click_cumsum <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># delete serp before first click</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">another_search =</span> <span class="kw">length</span>(<span class="kw">unique</span>(serp_id)) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># comeback to make another search</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">return_to_make_another_search =</span> <span class="kw">sum</span>(another_search), <span class="dt">n_session =</span> <span class="kw">length</span>(<span class="kw">unique</span>(session_id))) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">do</span>(binom<span class="op">::</span><span class="kw">binom.bayes</span>(.<span class="op">$</span>return_to_make_another_search, .<span class="op">$</span>n_session, <span class="dt">conf.level =</span> <span class="fl">0.95</span>))
+
+dplyr<span class="op">::</span><span class="kw">bind_rows</span>(<span class="st">&quot;Return to the same search page&quot;</span> =<span class="st"> </span>returnRate_to_same_search, 
+                 <span class="st">&quot;Return to make different search&quot;</span> =<span class="st"> </span>returnRate_to_other_search, <span class="dt">.id =</span> <span class="st">&quot;type&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">pointrange_chart</span>(<span class="dt">y_lab =</span> <span class="st">&quot;Return rate&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Return rate after users clickthrough on search engine result pages&quot;</span>,
+                   <span class="dt">subtitle =</span> <span class="st">&quot;With 95% credible intervals.&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">facet_wrap</span>(<span class="op">~</span><span class="st"> </span>type, <span class="dt">scales =</span> <span class="st">&quot;free_y&quot;</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">theme_facet</span>(<span class="dt">border =</span> <span class="ot">FALSE</span>, <span class="dt">clean_xaxis =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/return_rate-1.png" alt="**Figure 9**: Return rate after users clickthrough on search engine result pages." width="\textwidth" />
+<p class="caption">
+<strong>Figure 9</strong>: Return rate after users clickthrough on search engine result pages.
+</p>
+</div>
+</div>
+<div id="load-time-of-search-results-pages" class="section level2">
+<h2>Load time of search results pages</h2>
+<p>We can see that the distributions of search result pages’ load time of the two groups almost overlap.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">events <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>, <span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x=</span>load_time)) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">scale_x_sqrt</span>() <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">geom_density</span>(<span class="kw">aes</span>(<span class="dt">group=</span>group, <span class="dt">colour=</span>group, <span class="dt">fill=</span>group), <span class="dt">alpha=</span><span class="fl">0.3</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">x =</span> <span class="st">&quot;Load Time&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Density&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Distribution of search result page load time by test group&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme_min</span>()</code></pre></div>
+<div class="figure">
+<img src="index_files/figure-html/serp_loadtime-1.png" alt="**Figure 10**: Distribution of search result pages' load time by test group." width="\textwidth" />
+<p class="caption">
+<strong>Figure 10</strong>: Distribution of search result pages’ load time by test group.
+</p>
+</div>
+</div>
+</div>
+<div id="discussion" class="section level1">
+<h1>Discussion</h1>
+<p>To do</p>
+</div>
+<div id="acknowledgements" class="section level1">
+<h1>Acknowledgements</h1>
+<p>To do</p>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+</div>
+
+<div id="wmf" title="By Wikimedia Foundation (Wikimedia Foundation) [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0)], via Wikimedia Commons"></div>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://tools-static.wmflabs.org/cdnjs/ajax/libs/mathjax/2.6.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

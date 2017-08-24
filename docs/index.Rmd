@@ -1,0 +1,687 @@
+---
+title: "DRAFT: Test of the Explore Similar Widget"
+subtitle: "Providing users with related pages, categories and suggested languages in search results"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+author:
+- affiliation: "Senior Software Engineer, Wikimedia Foundation"
+  name: "Erik Bernhardson"
+- affiliation: "User Experience Engineer, Wikimedia Foundation"
+  name: "Jan Drewniak"
+- affiliation: "Data Analyst, Wikimedia Foundation"
+  name: "Chelsy Xie"
+- affiliation: "Product Manager (Analysis, Search Frontend), Wikimedia Foundation"
+  name: "Deb Tankersley"
+# Add Dan David, Trey
+abstract: >
+  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide users with related pages, categories and suggested languages in each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar results. Users hover over the 'Related' section most often, followed by 'categories' and 'languages' sections. Since the time users spent on reading the similar information is too short, we doubt that 80% of the hover-overs happened by accident. Our analysis also showed that providing information similar to search results did not improve user engagement, but it did not hurt user experience neither. 
+  Given the fact that very few users see the simiar results and the feedbacks we got from usertesting.com told us that users thought it is userful, we suggest doing another test which always shows the similar links without hover-on.
+output:
+  html_document:
+    includes:
+      after_body: suffix.html # not showing, need to fix css???
+    code_folding: hide
+    css: style.css
+    fig_caption: yes
+    fig_width: 10
+    fig_height: 6
+    highlight: zenburn
+    keep_md: yes
+    mathjax: https://tools-static.wmflabs.org/cdnjs/ajax/libs/mathjax/2.6.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+    md_extensions: +raw_html +markdown_in_html_blocks +tex_math_dollars +fancy_lists +startnum +lists_without_preceding_blankline +footnotes +implicit_header_references
+    self_contained: no
+    theme: flatly
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: no
+  pdf_document:
+    citation_package: natbib
+    fig_height: 6
+    fig_width: 10
+    keep_tex: yes
+    latex_engine: xelatex
+    template: svm-latex-ms.tex
+link-citations: yes
+nocite: |
+  @R-rmarkdown, @R-magrittr, @R-tidyr, @R-dplyr, @R-ggplot2, @R-wmf
+fontsize: 11pt
+geometry: margin=1in
+header-includes:
+  - \usepackage{floatrow}
+  - \floatsetup[table]{capposition=bottom}
+---
+```{js, echo = FALSE}
+$(function() {
+  /* Lets the user click on the images to view them in full resolution. */
+  $("div.figure img").wrap(function() {
+    var link = $('<a/>');
+    link.attr('href', $(this).attr('src'));
+    link.attr('title', $(this).attr('alt'));
+    link.attr('target', '_blank');
+    return link;
+  });
+  $("p.abstract").text("Executive Summary");
+  $("div#wmf").wrap('<a href="https://wikimediafoundation.org/" />');
+});
+```
+```{r setup, include=FALSE}
+set.seed(0); options(digits = 3, scipen = 500)
+library(magrittr)
+library(knitr)
+library(kableExtra)
+path <- function(x) {
+  if (grepl("docs", getwd(), fixed = TRUE)) {
+    return(file.path("..", x))
+  } else {
+    return(x)
+  }
+}
+source(path("functions.R"))
+if (!"printr" %in% installed.packages()[, "Package"]) {
+  install.packages("printr", type = "source", repos = c("Yihui Xie" = "http://yihui.name/xran", CRAN = "http://cran.rstudio.com"))
+} else {
+  loadNamespace("printr")
+}
+if (is_html()) {
+  options(knitr.table.format = "html")
+} else {
+  options(knitr.table.format = "latex")
+}
+opts_chunk$set(
+  echo = is_html(), warning = FALSE, message = FALSE,
+  out.width='\\textwidth', dev = 'png', fig.ext = 'png',
+  dpi = ifelse(is_html(), 150, 300)
+)
+```
+```{r captions, include=FALSE}
+# Manual figure & table captioning:
+library(captioner) # install.packages("captioner")
+table_caps <- captioner(prefix = "Table")
+figure_caps <- captioner(prefix = "Figure")
+code_caps <- captioner(prefix = "Snippet")
+# Custom caption formatting and printing:
+format_caption <- function(caps, name) {
+  return({
+    sub(caps(name, display = "cite"),
+      paste0(ifelse(is_html(), "**", "\\textbf{"), caps(name, display = "cite"), ifelse(is_html(), "**", "}")),
+      caps(name, display = "full"), fixed = TRUE) %>%
+    sub("  ", " ", ., fixed = TRUE)
+  })
+}
+print_caption <- function(formatted_caption) {
+  cat(paste0('<p class = "caption">', formatted_caption, '</p>', collapse = ''))
+}
+# Add captions:
+figure_caps(name = "Example", caption = "Example of explore similar widget on English Wikipedia.")
+table_caps(name = "Session Counts", caption = "Number of search sessions used for analysis by group. Each search session may have several individual searches.")
+table_caps(name = "Hover Counts", caption = "Number of hover-on actions by section and number of results shown. For example, there are 2 hovers on the 'Categories' section and see 0 result.")
+table_caps(name = "Hover Time", caption = "Number of hover-over that stay on the widget for n seconds. For example, there are 196 hover-over actions that stay on the widget for less than 1 seconds. The dwell time is the difference between the timestamp of hover-off and hover-on.")
+figure_caps(name = "Daily Searches", caption = "Number of all searches, searches with results, searches with clickthrough and searches with hover-over, by day and group.")
+figure_caps(name = "Daily ZRR CTR", caption = "Daily search-wise zero results rate and clickthrough rates of experimental groups. Dashed lines mark the overall zero results rate and clickthrough rate.")
+figure_caps(name = "Daily Hover Rate", caption = "Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate.")
+figure_caps(name = "Overall CTR", caption = "Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over.")
+figure_caps(name = "Search Abandonment", caption = "Search abandon rate by test group. The graph on the left shows the proportion of searches without any actions on the result page. The right one shows the proportion of searches that have no click, reload or page-turn.")
+figure_caps(name = "Scroll on SERP", caption = "Proportion of search results pages with scroll by test group.")
+figure_caps(name = "SERP Survival", caption = "Proportion of search results pages from autocomplete last longer than T. Currently we are only able to track the dwell time of search result pages from autocomplete search.")
+figure_caps(name = "Return Rate", caption = "Return rate after users clickthrough on search engine result pages.")
+figure_caps(name = "Load Time", caption = "Distribution of search result pages' load time by test group.")
+```
+```{r links, echo=FALSE, results='asis'}
+if (is_html()) {
+  cat('<p>{ <a href="https://github.com/wikimedia-research/Discovery-Search-Test-ExploreSimilar/blob/master/docs/index.Rmd">RMarkdown Source</a> | <a href="https://github.com/wikimedia-research/Discovery-Search-Test-ExploreSimilar">Analysis Codebase</a> }</p>')
+} else {
+  cat('\\let\\thefootnote\\relax\\footnote{Source code and data are available on GitHub (\\href{https://github.com/wikimedia-research/Discovery-Search-Test-ExploreSimilar}{wikimedia-research/Discovery-Search-Test-ExploreSimilar})}')
+}
+```
+```{r data, cache=TRUE, include=FALSE}
+load(path("data/explore_similar_test.RData"))
+events <- events_raw
+```
+# Introduction
+
+To do ([Phab ticket](https://phabricator.wikimedia.org/T149809))
+
+```{r example_caption, include=FALSE}
+example_cap <- format_caption(figure_caps, "Example")
+example_png <- png::readPNG("../example.png", info = TRUE)
+example_dim <- attr(example_png, "info")$dim
+```
+```{r example_figure, fig.width=ifelse(is_html(), 0.25, 1)*example_dim[1]/72, fig.height=ifelse(is_html(), 0.25, 1)*example_dim[2]/72, out.height='4in', fig.cap=example_cap, fig.align='center', echo=FALSE, out.width=NULL}
+grid::grid.raster(example_png, interpolate = TRUE)
+```
+
+```{r "test group description", results='asis', echo=FALSE, eval=FALSE}
+descriptions <- list(
+  `Control` = "This group received the baseline user experience, which only includes the search results from the wiki they are on. To make their experience comparable to the test groups with respect to latency, we performed the search across the additional indices, but did not show the results to the end user.",
+  `Test` = "This group received the experimental user experience, which includes search results from other wikis (if any were returned). The boxes holding the results (one box for each wiki) were ordered according to recall -- the volume of search results returned for each respective wiki."
+)
+if (is_html()) {
+  cat("<span class = \"test-group-1\">Control</span>
+:   ", descriptions$`Control` , "
+
+<span class = \"test-group-2\">Test</span>
+:   ", descriptions$`Test`)
+} else {
+  cat("\\begin{itemize}
+  \\item{\\textbf{Control}: ", descriptions$`Control` , "}
+  \\item{\\textbf{Test}: ", descriptions$`Test` , "}
+\\end{itemize}")
+}
+```
+
+On 30 June 2017 we deployed an A/B test on the desktop version of English Wikipedia to assess the efficacy of this feature. The test concluded on 24 July 2017, after a total of `r nrow(dplyr::distinct(events, session_id))` search sessions had been anonymously tracked.
+
+# Methods
+
+This test's event logging (EL) was implemented in JavaScript according to the [TestSearchSatisfaction2 (TSS2)](https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&oldid=16909631) schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R.
+
+```{r pkgs}
+import::from(dplyr, group_by, ungroup, keep_where = filter, mutate, arrange, select, transmute, left_join, summarize, bind_rows, case_when, if_else, rename, tally)
+library(ggplot2)
+library(tidyr)
+```
+
+## Data
+
+1 in 1000 users are included in EventLogging (on enwiki that's about 2K full-text searchers, according to [T163273](https://phabricator.wikimedia.org/T163273)). Of those 1 in 1000 users, 1 in 2 are included in the test (that's about 1K sessions daily). Of those 1 in 2 users, 50% go in a test group, labeled "explore_similar_test", and the other 50% of users will go in a control group, labeled "explore_similar_control" (that's about 500 sessions for each bucket). However, we failed to notice that the sampling didn't work as we expected -- we got only about 100 sessions per day for each bucket. But we've got enough data since we ran this test for 25 days. 
+
+```{r data_cleanup}
+#De-duplicating events...
+events <- events %>%
+  mutate(
+    timestamp = lubridate::ymd_hms(timestamp),
+    date = as.Date(timestamp)
+  ) %>%
+  arrange(session_id, event_id, timestamp) %>%
+  dplyr::distinct(session_id, event_id, .keep_all = TRUE)
+rm(events_raw) # to free up memory
+
+# Delete events with negative load time...
+events <- events %>%
+  keep_where(is.na(load_time) | load_time >= 0)
+
+# message("De-duplicating SERPs...")
+SERPs <- events %>%
+  keep_where(event == "searchResultPage") %>%
+  select(c(session_id, page_id, query_hash, search_token)) %>%
+  group_by(session_id, query_hash) %>%
+  mutate(serp_id = page_id[1], cirrus_id = search_token[1]) %>%
+  ungroup %>%
+  select(c(page_id, serp_id, cirrus_id))
+events <- events %>%
+  dplyr::left_join(SERPs, by = "page_id")
+rm(SERPs) # to free up memory
+
+# message("Removing events without an associated SERP (orphan clicks and check-ins)...")
+n_evnt <- nrow(events)
+events <- events %>%
+  keep_where(!(is.na(serp_id) & !(event %in% c("visitPage", "checkin")))) %>% # remove orphan click
+  group_by(session_id) %>%
+  keep_where("searchResultPage" %in% event) %>% # remove orphan "visitPage" and "checkin"
+  ungroup
+# cat(" Removed ", n_evnt - nrow(events), " orphan (SERP-less) events.")
+rm(n_evnt)
+
+# message("Removing sessions falling into multiple test groups")
+temp <- events %>%
+  group_by(session_id) %>%
+  summarize(unique_group = length(unique(group)) == 1)
+# cat(" Removed ", sum(!temp$unique_group), " sessions falling into multiple test groups.")
+events <- events %>%
+  keep_where(session_id %in% temp$session_id[temp$unique_group])
+rm(temp)
+
+# Number of wikis in the test
+n_wiki <- length(unique(events$wiki))
+# message("Number of wikis in the test: ", n_wiki)
+
+# Remove session with more than 50 searches and only serp
+spider_session <- events %>%
+  group_by(date, group, session_id) %>%
+  summarize(n_search = length(unique(serp_id)),
+            only_serp = sum(event == "searchResultPage") == n() & sum(event_scroll) < 1) %>%
+  keep_where(n_search > 50, only_serp == TRUE) %>%
+  {.$session_id}
+events <- events %>%
+  keep_where(!(session_id %in% spider_session))
+# cat(" Removed ", length(spider_session), " sessions with more than 50 searches and only serp.")
+
+# Scroll on serp
+events <- events %>%
+  keep_where(!(event %in% c("visitPage", "checkin"))) %>%
+  group_by(session_id, page_id) %>%
+  summarize(n_scroll_serp = sum(event_scroll)) %>%
+  ungroup %>%
+  dplyr::right_join(events, by = c("session_id", "page_id"))
+
+# Rename group
+events <- events %>%
+  mutate(group = ifelse(group == "explore_similar_control", "Control", "Test"))
+```
+```{r autocomplete_cleanup}
+load(path("data/fulltext_from_auto.RData"))
+
+# message("De-duplicating events...")
+fulltext_from_auto <- fulltext_from_auto %>%
+  mutate(
+    timestamp = lubridate::ymd_hms(timestamp),
+    date = as.Date(timestamp),
+    group = ifelse(group == "explore_similar_control", "Control", "Test")
+  ) %>%
+  arrange(session_id, event_id, timestamp) %>%
+  dplyr::distinct(session_id, event_id, .keep_all = TRUE)
+
+# Data summary
+# fulltext_from_auto %>%
+#   group_by(group) %>%
+#   summarize(n_session = length(unique(session_id)), n_serp = length(unique(page_id)))
+
+# message("Group by SERPs...")
+serp_from_auto <- fulltext_from_auto %>%
+  arrange(date, session_id, page_id, timestamp) %>%
+  group_by(wiki, group, session_id, page_id) %>%
+  summarize(from_autocomplete = TRUE, 
+            max_checkin_serp = ifelse("checkin" %in% event, max(event_checkin, na.rm = TRUE), 0),
+            status = ifelse(max_checkin_serp == "420", 1, 2)
+  )
+
+# message("Join with events...")
+events <- events %>%
+  dplyr::left_join(serp_from_auto, by = c("group", "wiki", "session_id", "page_id")) %>%
+# length(unique(events$page_id[events$from_autocomplete == TRUE]))
+# some serp from auto couldn't find a match because their sessions are identified as spider sessions
+  mutate(from_autocomplete = ifelse(is.na(from_autocomplete), FALSE, from_autocomplete))
+```
+```{r search_data}
+# message("Aggregating by search...")
+searches <- events %>%
+  keep_where(!(is.na(serp_id))) %>% # remove visitPage and checkin events
+  arrange(date, session_id, serp_id, timestamp) %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(
+    date = date[1],
+    timestamp = timestamp[1],
+    from_autocomplete = sum(from_autocomplete, na.rm = TRUE) > 0, 
+    has_scroll_serp = sum(n_scroll_serp, na.rm = TRUE) > 0,
+    `got same-wiki results` = any(`some same-wiki results` == "TRUE", na.rm = TRUE),
+    engaged = any(event != "searchResultPage") || length(unique(page_id[event == "searchResultPage"])) > 1 || any(has_scroll_serp),
+    engaged_without_es = any(!(event %in% c("searchResultPage", "esclick", "hover-on", "hover-off"))) || length(unique(page_id[event == "searchResultPage"])) > 1, #|| any(has_scroll_serp),
+    `same-wiki clickthrough` = "click" %in% event,
+    `other clickthrough` = sum(grepl("click", event) & event != "click"),
+    `no. same-wiki results clicked` = length(unique(event_position[event == "click"])),
+    `first clicked same-wiki results position` = ifelse(`same-wiki clickthrough`, event_position[event == "click"][1], NA), # event_position is 0-based
+    `max clicked position (same-wiki)` = ifelse(`same-wiki clickthrough`, max(event_position[event == "click"], na.rm = TRUE), NA),
+    `Query score (F=0.1)` = query_score(event_position, 0.1),
+    `Query score (F=0.5)` = query_score(event_position, 0.5),
+    `Query score (F=0.9)` = query_score(event_position, 0.9)
+  ) %>%
+  ungroup
+
+# message("Processing explore-similar clicks...")
+esclick_result <- events %>%
+  keep_where(event == "esclick") %>%
+  cbind(., do.call(dplyr::bind_rows, lapply(.$event_extraParams, parse_extraParams, action = "esclick"))) %>%
+  select(group, wiki, session_id, serp_id, page_id, event_id, hoverId, section, result)
+searches <- esclick_result %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(with_esclick = TRUE) %>%
+  dplyr::right_join(searches, by = c("group", "wiki", "session_id", "serp_id"))
+
+# message("Processing explore-similar hover events...")
+hover_over <- events %>%
+  keep_where(event %in% c("hover-on", "hover-off")) %>%
+  cbind(., do.call(dplyr::bind_rows, lapply(.$event_extraParams, parse_extraParams, action = c("hover-on", "hover-off")))) %>%
+  select(timestamp, group, wiki, session_id, serp_id, page_id, event_id, event, hoverId, section, results)
+searches <- hover_over %>%
+  keep_where(event == "hover-on") %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(n_hover = length(unique(hoverId))) %>%
+  dplyr::right_join(searches, by = c("group", "wiki", "session_id", "serp_id"))
+
+searches <- searches %>%
+  dplyr::mutate(with_esclick = ifelse(is.na(with_esclick), FALSE, with_esclick),
+                n_hover = ifelse(is.na(n_hover), 0, n_hover))
+```
+
+After the test has concluded on `r format(max(events$date), "%d %B %Y")`, we processed the collected data and filtered out duplicated events, extraneous search engine result pages (SERPs), events without an associated SERPs, and remove sessions with more than 50 searches but no interaction with the result. This left us with a total of `r dplyr::n_distinct(events$session_id, events$group, events$wiki)` search sessions (see `r table_caps("Session Counts", display = "cite")` for the full breakdown by group).
+
+```{r summary_stats_table, results='asis', echo=FALSE}
+searches %>%
+  group_by(`Test group` = group, wiki) %>%
+  summarize(
+    `Search sessions` = length(unique(session_id)),
+    `Searches recorded` = n()
+  ) %>%
+  ungroup %>% {
+    rbind(., tibble::tibble(
+      `wiki` = "All wikis",
+      `Test group` = "Total",
+      `Search sessions` = sum(.$`Search sessions`),
+      `Searches recorded` = sum(.$`Searches recorded`)
+    ))
+  } %>%
+  mutate(
+    `Search sessions` = prettyNum(`Search sessions`, big.mark = ","),
+    `Searches recorded` = prettyNum(`Searches recorded`, big.mark = ",")
+  ) %>%
+  fable(format_caption(table_caps, "Session Counts"))
+```
+
+# Results
+
+There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions.
+
+```{r daily_searches_caption, echo=FALSE}
+daily_searches_cap <- format_caption(figure_caps, "Daily Searches")
+```
+```{r daily_searches, fig.cap=daily_searches_cap}
+searches %>%
+  group_by(group, date) %>%
+  summarize(`All Searches` = n(), `Searches with Results` = sum(`got same-wiki results`), `Searches with Clicks` = sum(`same-wiki clickthrough`), `Searches with Hover` = sum(n_hover > 0)) %>%
+  gather(key=Group, value = count, -date, -group) %>%
+  ggplot(aes(x=date, y=count, colour=Group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(labels=polloi::compress, name = "Number of Searches") +
+  ggtitle("Daily fulltext searches on desktop") +
+  facet_wrap(~ group, scales = "free_y") + 
+  theme_facet(border = FALSE)
+```
+
+```{r zrr_and_ctr}
+zrr <- searches %>%
+  group_by(group) %>%
+  summarize(zero = sum(!`got same-wiki results`), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$zero, n = .$n_search, conf.level = 0.95))
+  )
+ctr <- searches %>% 
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(clickthroughs = sum(`same-wiki clickthrough`), n_search = n()) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$clickthroughs, .$n_search, conf.level = 0.95))
+```
+```{r daily_zrr_and_ctr_caption, echo=FALSE}
+daily_zrr_and_ctr_cap <- format_caption(figure_caps, "Daily ZRR CTR")
+```
+```{r daily_zrr_and_ctr, fig.cap=daily_zrr_and_ctr_cap}
+p1 <- searches %>%
+  group_by(date, group) %>%
+  summarize(n_search = n(), zero = sum(!`got same-wiki results`)) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$zero, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = group, y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = zrr, aes(yintercept = mean, color = group), linetype = "dashed") +
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_brewer("Group", palette = "Set1") +
+  scale_fill_brewer("Group", palette = "Set1") +
+  scale_y_continuous("Zero Results Rate", labels = scales::percent_format()) +
+  theme_min()
+p2 <- searches %>%
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(date, group) %>%
+  summarize(n_search = n(), clickthroughs = sum(`same-wiki clickthrough`)) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$clickthroughs, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = group, y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = ctr, aes(yintercept = mean, color = group), linetype = "dashed") +
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_brewer("Group", palette = "Set1") +
+  scale_fill_brewer("Group", palette = "Set1") +
+  scale_y_continuous("Clickthrough Rate", labels = scales::percent_format()) +
+  theme_min()
+cowplot::plot_grid(p1, p2) +
+  labs(title = "Daily search-wise zero results rate and clickthrough rates by group")
+```
+
+```{r hover_rate}
+hover_rate <- searches %>% 
+  keep_where(group == "Test", `got same-wiki results`) %>% 
+  group_by(group) %>% 
+  summarize(hover = sum(n_hover > 0), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$hover, n = .$n_search, conf.level = 0.95))
+  )
+```
+```{r daily_hover_rate_caption, echo=FALSE}
+daily_hover_rate_cap <- format_caption(figure_caps, "Daily Hover Rate")
+```
+```{r daily_hover_rate, fig.cap=daily_hover_rate_cap}
+searches %>%
+  keep_where(group == "Test", `got same-wiki results`) %>% 
+  group_by(group, date) %>%
+  summarize(hover = sum(n_hover > 0), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$hover, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = "#377EB8", y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = hover_rate, aes(yintercept = mean, color = "#377EB8"), linetype = "dashed") + #9.8%
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = "#377EB8"), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_manual("Group", values = "#377EB8", labels = "Test") +
+  scale_fill_manual("Group", values = "#377EB8", labels = "Test") +
+  scale_y_continuous("Hover-over Rate", labels = scales::percent_format()) +
+  theme_min() + 
+  labs(title = "Daily search-wise hover-over rates by group")
+```
+
+## Engagement with the results
+
+`r figure_caps("Overall CTR", display = "cite")` compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn't lead to higher clickthrough rate.
+```{r engagement_samewiki_caption, echo=FALSE}
+ctr_cap <- format_caption(figure_caps, "Overall CTR")
+```
+```{r engagement_samewiki, fig.cap=ctr_cap}
+searches %>% 
+  keep_where(`got same-wiki results` == TRUE, n_hover > 0) %>%
+  group_by(group) %>%
+  summarize(clickthroughs = sum(`same-wiki clickthrough`), n_search = n()) %>%
+  dplyr::do(binom::binom.bayes(.$clickthroughs, .$n_search, conf.level = 0.95)) %>%
+  mutate(group = "With Hover") %>%
+  dplyr::bind_rows(ctr) %>%
+  pointrange_chart(y_lab = "Clickthrough rate", title = "Same-wiki clickthrough rates by test group and clickthrough rate among searches with hover-over",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+After we show the search result page to a user, if the user doesn't do anything -- no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In `r figure_caps("Search Abandonment", display = "cite")`, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because 1) the control group didn't track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn't happen accidently; 2) according to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although `r figure_caps("Scroll on SERP", display = "cite")` shows that the proportion of search result pages with scroll in the test group is not significantly higher.). Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).
+
+```{r search_abandon_rate_caption, echo=FALSE}
+search_abandon_rate_cap <- format_caption(figure_caps, "Search Abandonment")
+```
+```{r search_abandon_rate, fig.cap=search_abandon_rate_cap}
+p1 <- searches %>%
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(abandon = n() - sum(engaged), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$abandon, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Search Abandon Rate", title = "Proportion of abandoned searches") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+p2 <- searches %>%
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(abandon = n() - sum(engaged_without_es), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$abandon, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Search Abandon Rate", title = "Proportion of abandoned searches",
+                   subtitle = "Excluding hover-over, explore similar clicks and scrolls.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+cowplot::plot_grid(p1, p2)
+```
+
+```{r scroll_serp_caption, echo=FALSE}
+scroll_serp_cap <- format_caption(figure_caps, "Scroll on SERP")
+```
+```{r scroll_serp, fig.cap=scroll_serp_cap}
+events %>% 
+  keep_where(event == "searchResultPage", `some same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(scrolls = sum(n_scroll_serp > 0), n_serp = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$scrolls, n = .$n_serp, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Proportion of SERPs", 
+                   title = "Proportion of SERPs with scroll by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+`r figure_caps("SERP Survival", display = "cite")` shows that the time users spent on search result pages are not significantly different.
+```{r serp_survival_caption, echo=FALSE}
+serp_survival_cap <- format_caption(figure_caps, "SERP Survival")
+```
+```{r serp_survival, fig.cap=serp_survival_cap}
+temp <- events %>% keep_where(event == "searchResultPage", from_autocomplete == TRUE, `some same-wiki results` == TRUE)
+# cat("There are", length(unique(temp$page_id)), "fulltext search result pages from autocomplete.", 
+#     length(unique(temp$page_id[temp$group == "explore_similar_control"])), "of them are in control group and", 
+#     length(unique(temp$page_id[temp$group == "explore_similar_test"])), "of them are in test group.")
+temp$SurvObj <- with(temp, survival::Surv(max_checkin_serp, status == 2))
+fit <- survival::survfit(SurvObj ~ group, data = temp)
+ggsurv <- survminer::ggsurvplot(
+  fit,
+  conf.int = TRUE,
+  xlab = "T (Dwell Time in seconds)",
+  ylab = "Proportion of SERPs longer than T (P%)",
+  surv.scale = "percent",
+  palette = "Set1",
+  legend = "bottom",
+  legend.title = "Group",
+  legend.labs = c("Control", "Test"),
+  ggtheme = theme_min()
+)
+ggsurv$plot +
+  labs(
+    title = "Survival curves by test group",
+    subtitle = "With 95% confidence intervals."
+  )
+rm(temp)
+```
+
+## Interactions with explore similar widget
+
+There are `r sum(hover_over$event == "hover-on")` hover-on actions and `r table_caps("Hover Counts", display = "cite")` shows the breakdown by section and number of results shown. 12.7% (92) hovers sees 0 result, most of them are in the "Languages" section. 44.1% (319) hover on the "Related" section, 34% (246) hover on the "Categories" section and 21.9% (158) hover on the "Language" section.
+
+```{r hover_summary, results='asis', echo=FALSE}
+hover_over %>%
+  keep_where(event == "hover-on") %>%
+  mutate(results = ifelse(results >= 5, "5+ results", Pluralize(results, "result"))) %>%
+  group_by(section, results) %>%
+  tally %>%
+  xtabs(n ~ section + results, data = .) %>%
+  addmargins %>%
+  fable(format_caption(table_caps, "Hover Counts"))
+```
+
+`r table_caps("Hover Time", display = "cite")` shows the approximate time users stay on the widget after they hover-on.
+More than 80% of hover-over last less than 2 seconds, which means they are either not interested in the information or just hover-over by accident. 
+```{r hover_time}
+hover_over %>%
+  group_by(hoverId) %>%
+  keep_where(length(event_id) == 2) %>%
+  arrange(timestamp) %>%
+  summarize(`Dwell Time` = difftime(max(timestamp), min(timestamp), units="secs")) %>%
+  mutate(`Dwell Time` = ifelse(`Dwell Time` > 5, "6+ secs", paste(`Dwell Time`, "secs"))) %>%
+  group_by(`Dwell Time`) %>%
+  summarize(`Number of Hover-over` = n()) %>%
+  mutate(Proportion = paste0(round(`Number of Hover-over` / sum(`Number of Hover-over`) * 100, 2), "%")) %>%
+  fable(format_caption(table_caps, "Hover Time"))
+```
+
+There are only 3 valid clicks on the explore similar results from 3 different sessions. There are 1 click on the first "Related" result and 2 clicks on the second "Related" result.
+
+Unfortunately, we didn't record the position of the same-wiki search result when users interact with the explore similar widget.
+
+## Return Rate
+
+Users may click back to search page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:
+
+- Among users with at least a click in their search, the proportion of searches that return to the same search page
+- Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different serp but in the same session)
+
+From `r figure_caps("Return Rate", display = "cite")`, we can see the return rates are not significantly different between groups. 
+
+```{r return_rate_caption, echo=FALSE}
+return_rate_cap <- format_caption(figure_caps, "Return Rate")
+```
+```{r return_rate, fig.cap=return_rate_cap}
+returnRate_to_same_search <- events %>%
+  keep_where(!(event %in% c("visitPage", "checkin"))) %>%
+  group_by(group, serp_id) %>%
+  keep_where(sum(grepl("click", event)) > 0) %>% # Among search with at least 1 click
+  arrange(group, serp_id, timestamp) %>%
+  mutate(n_click_cumsum = cumsum(grepl("click", event))) %>%
+  keep_where(n_click_cumsum > 0) %>% # delete serp and hover before first click
+  summarize(comeback = sum(event %in% c("searchResultPage", "hover-on", "hover-off")) > 0 | sum(n_click_cumsum > 1) > 0) %>% # comeback to the same serp or make another click or hover
+  group_by(group) %>%
+  summarize(return_to_same_search = sum(comeback), n_search = length(unique(serp_id))) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$return_to_same_search, .$n_search, conf.level = 0.95))
+
+returnRate_to_other_search <- events %>%
+  keep_where(!(event %in% c("visitPage", "checkin"))) %>%
+  group_by(group, session_id) %>%
+  keep_where(sum(grepl("click", event)) > 0) %>% # Among session with at least 1 click
+  arrange(group, session_id, timestamp) %>%
+  mutate(n_click_cumsum = cumsum(grepl("click", event))) %>%
+  keep_where(n_click_cumsum > 0) %>% # delete serp before first click
+  summarize(another_search = length(unique(serp_id)) > 1) %>% # comeback to make another search
+  group_by(group) %>%
+  summarize(return_to_make_another_search = sum(another_search), n_session = length(unique(session_id))) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$return_to_make_another_search, .$n_session, conf.level = 0.95))
+
+dplyr::bind_rows("Return to the same search page" = returnRate_to_same_search, 
+                 "Return to make different search" = returnRate_to_other_search, .id = "type") %>%
+  pointrange_chart(y_lab = "Return rate", title = "Return rate after users clickthrough on search engine result pages",
+                   subtitle = "With 95% credible intervals.") + 
+  facet_wrap(~ type, scales = "free_y") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+## Load time of search results pages
+
+We can see that the distributions of search result pages' load time of the two groups almost overlap.
+```{r serp_loadtime_caption, echo=FALSE}
+serp_loadtime_cap <- format_caption(figure_caps, "Load Time")
+```
+```{r serp_loadtime, fig.cap=serp_loadtime_cap}
+events %>%
+  keep_where(event == "searchResultPage", `some same-wiki results` == TRUE) %>%
+  ggplot(aes(x=load_time)) + 
+  scale_x_sqrt() + 
+  geom_density(aes(group=group, colour=group, fill=group), alpha=0.3) + 
+  labs(x = "Load Time", y = "Density", title = "Distribution of search result page load time by test group") +
+  theme_min()
+```
+
+# Discussion
+
+To do
+
+# Acknowledgements
+
+To do
+
+```{r bibliograpby, results='asis', echo=FALSE}
+if (is_html()) {
+  cat("# References\n")
+} else {
+  cat("\\nocite{*}\n")
+}
+```

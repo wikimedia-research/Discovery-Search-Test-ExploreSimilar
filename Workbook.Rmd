@@ -1,0 +1,865 @@
+---
+title: "Explore similar test analysis"
+author: "Chelsy Xie"
+date: "8/18/2017"
+output:
+  html_document:
+    # Table of Contents
+    toc: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    code_folding: hide
+    # Figures
+    fig_width: 10
+    fig_height: 6
+    # Theme
+    theme: flatly
+    highlight: zenburn
+    # Files
+    self_contained: true
+    keep_md: false
+    # Extras
+    mathjax: https://tools-static.wmflabs.org/cdnjs/ajax/libs/mathjax/2.6.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+    md_extensions: +raw_html +markdown_in_html_blocks +tex_math_dollars +fancy_lists +startnum +lists_without_preceding_blankline -autolink_bare_uris
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+source("functions.R")
+```
+
+Phab ticket: https://phabricator.wikimedia.org/T149809 \
+Schema: https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&oldid=16909631
+
+This test start from 20170629234223, a possibly effective patch merged on 2017-07-12T23:28:44Z, and the test was turn off on 2017-07-25. 
+
+## Compare auto-generated result before and after the [full URLs patch](https://gerrit.wikimedia.org/r/#/c/364834/)
+
+[The first report](auto_reports/Explore_Similar_Test1.html) use data from 30 June 2017 to 12 July 2017, and [the second report](auto_reports/Explore_Similar_Test2.html) use data from 13 July 2017 to 24 July 2017. Several note:
+
+- 3 esclick before, and 2 esclick after, which means regard less of the patch, almost no one clicks on explore similar result
+- control group has more SERPs and Searches recorded (but not search sessions) than test group. After patch, the difference in SERPs increase
+- After patch, the ZRR between groups are significantly different, which is **problematic**
+- Regarding CTR, difference between groups are around 10% which seems **too big**; before and after the patch, difference in CTR within groups are 10%, which is **very weird**
+
+On [search dashboard](http://discovery.wmflabs.org/metrics/#langproj_breakdown), there was weird CTR dip on enwiki in July 15-18th, not sure if this is related. 
+
+Check daily number of sessions, number of searches, number of SERPs, number of zero result searches, number of clickthrough searches on enwiki in July:
+```{r fetch_july_tss2_enwiki, eval=FALSE}
+message("Create an auto-closing SSH tunnel in the background...")
+system("ssh -f -o ExitOnForwardFailure=yes stat1003.eqiad.wmnet -L 3307:analytics-store.eqiad.wmnet:3306 sleep 10")
+library(RMySQL)
+con <- dbConnect(MySQL(), host = "127.0.0.1", group = "client", dbname = "log", port = 3307)
+
+query <- "SELECT
+  timestamp,
+  event_uniqueId AS event_id,
+  event_mwSessionId,
+  event_pageViewId AS page_id,
+  event_searchSessionId AS session_id,
+  event_subTest AS `group`,
+  wiki,
+  MD5(LOWER(TRIM(event_query))) AS query_hash,
+  event_action AS event,
+  CASE
+    WHEN event_position < 0 THEN NULL
+    ELSE event_position
+    END AS event_position,
+  CASE
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned > 0 THEN 'TRUE'
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned IS NULL THEN 'FALSE'
+    ELSE NULL
+    END AS `some same-wiki results`,
+  CASE
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned > -1 THEN event_hitsReturned
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned IS NULL THEN 0
+    ELSE NULL
+    END AS n_results,
+  event_scroll,
+  event_checkin,
+  event_extraParams,
+  event_msToDisplayResults AS load_time,
+  event_searchToken AS search_token,
+  userAgent AS user_agent
+FROM TestSearchSatisfaction2_16909631
+WHERE LEFT(timestamp, 8) >= '20170630' AND LEFT(timestamp, 8) < '20170801' 
+  AND wiki = 'enwiki'
+  AND event_source = 'fulltext'
+  AND event_searchSessionId <> 'explore_similar_test' 
+  AND CASE WHEN event_action = 'searchResultPage' THEN event_msToDisplayResults IS NOT NULL
+            WHEN event_action IN ('click', 'iwclick', 'ssclick') THEN event_position IS NOT NULL AND event_position > -1
+            WHEN event_action = 'visitPage' THEN event_pageViewId IS NOT NULL
+            WHEN event_action = 'checkin' THEN event_checkin IS NOT NULL AND event_pageViewId IS NOT NULL
+            ELSE TRUE
+       END;"
+message("Using SSH tunnel & connection to Analytics-Store...")
+july_events_enwiki <- wmf::mysql_read(query, "log", con = con)
+message("Closing connection...")
+wmf::mysql_close(con)
+message("Saving raw events data...")
+save(july_events_enwiki, file = "data/tss2_july.RData")
+```
+```{r tss2_enwiki_cleanup}
+load("data/tss2_july.RData")
+message("De-duplicating events...")
+july_events_enwiki <- july_events_enwiki %>%
+  mutate(
+    timestamp = lubridate::ymd_hms(timestamp),
+    date = as.Date(timestamp)
+  ) %>%
+  arrange(session_id, event_id, timestamp) %>%
+  dplyr::distinct(session_id, event_id, .keep_all = TRUE)
+
+message("De-duplicating SERPs...")
+SERPs <- july_events_enwiki %>%
+  filter(event == "searchResultPage") %>%
+  select(c(session_id, page_id, query_hash, search_token)) %>%
+  group_by(session_id, query_hash) %>%
+  mutate(serp_id = page_id[1], cirrus_id = search_token[1]) %>%
+  ungroup %>%
+  select(c(page_id, serp_id, cirrus_id))
+july_events_enwiki <- july_events_enwiki %>%
+  dplyr::left_join(SERPs, by = "page_id")
+rm(SERPs) # to free up memory
+
+message("Removing events without an associated SERP (orphan clicks and check-ins)...")
+n_evnt <- nrow(july_events_enwiki)
+july_events_enwiki <- july_events_enwiki %>%
+  filter(!(is.na(serp_id) & !(event %in% c("visitPage", "checkin")))) %>% # remove orphan click
+  group_by(session_id) %>%
+  filter("searchResultPage" %in% event) %>% # remove orphan "visitPage" and "checkin"
+  ungroup
+cat(" Removed ", n_evnt - nrow(july_events_enwiki), " orphan (SERP-less) events.")
+rm(n_evnt)
+
+message("Removing sessions falling into multiple test groups")
+temp <- july_events_enwiki %>%
+  group_by(session_id) %>%
+  summarize(unique_group = length(unique(group)) == 1)
+cat(" Removed ", sum(!temp$unique_group), " sessions falling into multiple test groups.")
+july_events_enwiki <- july_events_enwiki %>%
+  filter(session_id %in% temp$session_id[temp$unique_group])
+rm(temp)
+
+# is_bot from user_agent is not helpful... Only 1 bot in July!
+# july_events_enwiki <- july_events_enwiki %>%
+#   mutate(is_bot = purrr::map_lgl(user_agent, ~ jsonlite::fromJSON(.x)$is_bot))
+
+# Number of wikis in the test
+n_wiki <- length(unique(july_events_enwiki$wiki))
+message("Number of wikis in the test: ", n_wiki)
+july_events_enwiki <- july_events_enwiki %>%
+  mutate(group = if_else(is.na(group), "Other", group))
+
+# Remove session with more than 50 searches and only serp, then re-run eda.
+spider_session <- july_events_enwiki %>%
+  group_by(date, group, session_id) %>%
+  summarise(n_search = length(unique(serp_id)), 
+            approx_time_range = difftime(max(timestamp), min(timestamp), units="secs"),
+            with_click = "click" %in% event,
+            only_serp = sum(event == "searchResultPage") == n()) %>% 
+  # approx_time_range is the interval between first event and last event in a session
+  arrange(desc(n_search), approx_time_range) %>%
+  filter(n_search > 50, only_serp == TRUE) %>%
+  {.$session_id}
+# july_events_enwiki <- july_events_enwiki %>%
+#   filter(!(session_id %in% spider_session))
+```
+```{r tss2_enwiki_search_data}
+message("Aggregating by search...")
+july_enwiki_searches <- july_events_enwiki %>%
+  filter(!(is.na(serp_id))) %>% # remove visitPage and checkin events
+  arrange(date, session_id, serp_id, timestamp) %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(
+    date = date[1],
+    timestamp = timestamp[1],
+    `got same-wiki results` = any(`some same-wiki results` == "TRUE", na.rm = TRUE),
+    engaged = any(event != "searchResultPage") || length(unique(page_id[event == "searchResultPage"])) > 1,
+    `same-wiki clickthrough` = "click" %in% event,
+    `other clickthrough` = sum(grepl("click", event) & event != "click"),
+    `no. same-wiki results clicked` = length(unique(event_position[event == "click"])),
+    `first clicked same-wiki results position` = ifelse(`same-wiki clickthrough`, event_position[event == "click"][1], NA), # event_position is 0-based
+    `max clicked position (same-wiki)` = ifelse(`same-wiki clickthrough`, max(event_position[event == "click"], na.rm = TRUE), NA),
+    `Query score (F=0.1)` = query_score(event_position, 0.1),
+    `Query score (F=0.5)` = query_score(event_position, 0.5),
+    `Query score (F=0.9)` = query_score(event_position, 0.9)
+  ) %>%
+  ungroup
+```
+
+Number of sessions looks okay. But n_search, ZRR, CTR looks abnormal on 17th 21.
+```{r tss2_enwiki_eda}
+# daily number of sessions
+# looks normal
+july_events_enwiki %>%
+  group_by(date, group) %>%
+  summarise(n_session = length(unique(session_id))) %>%
+  ggplot(aes(x=date, y=n_session, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of sessions") +
+  ggtitle("Number of sessions on enwiki") +
+  theme(legend.position = "bottom")
+
+# daily number of searches
+# Spikes on July 9th, 17th in control group; weirdness in test group on 8-11th
+july_enwiki_searches %>%
+  group_by(date, group) %>%
+  summarise(n_search = n()) %>%
+  ggplot(aes(x=date, y=n_search, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of searches") +
+  ggtitle("Number of searches on enwiki") +
+  theme(legend.position = "bottom")
+
+july_enwiki_searches %>%
+  filter(date != as.Date("2017-07-09") & date != as.Date("2017-07-17")) %>%
+  group_by(date, group) %>%
+  summarise(n_search = n()) %>%
+  ggplot(aes(x=date, y=n_search, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of searches") +
+  ggtitle("Number of searches on enwiki") +
+  theme(legend.position = "bottom")
+
+# daily number of SERPs
+# Spikes on July 9th, 17th, 21st in control group; weirdness in test group on 8-11th
+july_events_enwiki %>%
+  filter(event == "searchResultPage") %>%
+  group_by(date, group) %>%
+  summarise(n_SERP = length(unique(page_id))) %>%
+  ggplot(aes(x=date, y=n_SERP, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of SERPs") +
+  ggtitle("Number of SERPs on enwiki") +
+  theme(legend.position = "bottom")
+
+# number of zero result searches
+# Spikes on July 9th, 17th, 21st in control group; weirdness in test group on 8-11th
+july_enwiki_searches %>%
+  filter(`got same-wiki results` == FALSE) %>%
+  group_by(date, group) %>%
+  summarise(n_search = n()) %>%
+  ggplot(aes(x=date, y=n_search, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of searches") +
+  ggtitle("Number of searches on enwiki with zero results") +
+  theme(legend.position = "bottom")
+
+# number of clickthrough searches
+# looks normal
+july_enwiki_searches %>%
+  filter(`same-wiki clickthrough` == TRUE) %>%
+  group_by(date, group) %>%
+  summarise(n_search = n()) %>%
+  ggplot(aes(x=date, y=n_search, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "Number of clickthroughs") +
+  ggtitle("Number of clickthroughs on enwiki") +
+  theme(legend.position = "bottom")
+
+# daily ZRR
+# Spike in control on 13, 17, 21st
+july_enwiki_searches %>%
+  filter(date < as.Date("2017-07-26")) %>%
+  group_by(date, group) %>%
+  summarise(zrr = sum(`got same-wiki results` == FALSE)/n()) %>%
+  ggplot(aes(x=date, y=zrr, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "ZRR") +
+  ggtitle("ZRR on enwiki") +
+  theme(legend.position = "bottom")
+
+# daily CTR
+# Dip on 17th, 21st in control group
+july_enwiki_searches %>%
+  filter(date < as.Date("2017-07-26")) %>%
+  group_by(date, group) %>%
+  summarise(ctr = sum(`same-wiki clickthrough` == TRUE)/sum(`got same-wiki results` == TRUE)) %>%
+  ggplot(aes(x=date, y=ctr, colour=group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "CTR") +
+  ggtitle("CTR on enwiki") +
+  theme(legend.position = "bottom")
+```
+
+Check if the weird result comes from bots -- large number of searches in a session with only serp event.
+```{r tss2_enwiki_check_bot}
+july_events_enwiki %>%
+  group_by(date, group, session_id) %>%
+  summarise(n_search = length(unique(serp_id)), 
+            approx_time_range = difftime(max(timestamp), min(timestamp), units="secs"),
+            with_click = "click" %in% event,
+            only_serp = sum(event == "searchResultPage") == n()) %>% 
+  # approx_time_range is the interval between first event and last event in a session
+  arrange(desc(n_search), approx_time_range) %>%
+  filter(n_search > 50 & only_serp & group != "Other")
+```
+
+Remove sessions with more than 50 searches and only serp event, then re-run auto report and eda. 2nd and 4th bullet point above are resolved. ZRR is still significantly different, but the difference decrease. EDA results looks more balanced.
+
+## Check random sampling bias
+
+Randomly sample 2 groups from control group (13 July 2017 to 24 July 2017) and see if the difference is significant. Re-run the following script several times. Numbers and significance doesn't change a lot, but significant difference between groups did happen a couple of times.
+
+```{r sample_and_check}
+temp <- july_enwiki_searches %>%
+  filter(group == "explore_similar_control", date >= as.Date("2017-07-13"), date <= as.Date("2017-07-24"))
+temp_session_id <- unique(temp$session_id)
+temp_group1 <- sample(temp_session_id, size = floor(length(temp_session_id) / 2))
+temp <- temp %>% mutate(group = if_else(session_id %in% temp_group1, "group1", "group2"))
+
+temp %>%
+  group_by(group) %>%
+  summarize(zero = sum(!`got same-wiki results`), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$zero, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Zero Results Rate", title = "Proportion of searches that did not yield any same-wiki results, by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+
+temp %>% 
+  filter(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(clickthroughs = sum(`same-wiki clickthrough`), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$clickthroughs, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Clickthrough rate", title = "Same-wiki clickthrough rates by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+## Sampling rate
+
+1 in 1000 users are included in EventLogging (on enwiki that's about 2K full-text searchers, according to T163273). Of those 1 in 1000 users, 1 in 2 are included in the test (that's about 1K sessions daily). Of those 1 in 2 users, 50% go in a test group, labeled "explore_similar_test", and the other 50% of users will go in a control group, labeled "explore_similar_control" (that's about 500 sessions for each bucket). However, we failed to notice that the sampling didn't work as we expected -- we got only about 100 sessions per day for each bucket. But we've got enough data since we ran this test for 12 days. (According to other test like cross-wiki, ~2K sessions per bucket in the whole test is enough)
+
+## Metrics: Get Data
+
+First, fetch test data:
+```{r fetch_test_data, eval=FALSE}
+message("Create an auto-closing SSH tunnel in the background...")
+system("ssh -f -o ExitOnForwardFailure=yes stat1003.eqiad.wmnet -L 3307:analytics-store.eqiad.wmnet:3306 sleep 10")
+library(RMySQL)
+con <- dbConnect(MySQL(), host = "127.0.0.1", group = "client", dbname = "log", port = 3307)
+
+query <- "SELECT
+  timestamp,
+  event_uniqueId AS event_id,
+  event_mwSessionId,
+  event_pageViewId AS page_id,
+  event_searchSessionId AS session_id,
+  event_subTest AS `group`,
+  wiki,
+  MD5(LOWER(TRIM(event_query))) AS query_hash,
+  event_action AS event,
+  CASE
+    WHEN event_position < 0 THEN NULL
+    ELSE event_position
+    END AS event_position,
+  CASE
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned > 0 THEN 'TRUE'
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned IS NULL THEN 'FALSE'
+    ELSE NULL
+    END AS `some same-wiki results`,
+  CASE
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned > -1 THEN event_hitsReturned
+    WHEN event_action = 'searchResultPage' AND event_hitsReturned IS NULL THEN 0
+    ELSE NULL
+    END AS n_results,
+  event_scroll,
+  event_checkin,
+  event_extraParams,
+  event_msToDisplayResults AS load_time,
+  event_searchToken AS search_token,
+  userAgent AS user_agent
+FROM TestSearchSatisfaction2_16909631
+WHERE LEFT(timestamp, 8) >= '20170630' AND LEFT(timestamp, 8) < '20170725' 
+  AND wiki = 'enwiki'
+  AND event_subTest IN('explore_similar_control', 'explore_similar_test') 
+  AND event_source = 'fulltext'
+  AND event_searchSessionId <> 'explore_similar_test' 
+  AND CASE WHEN event_action = 'searchResultPage' THEN event_msToDisplayResults IS NOT NULL
+            WHEN event_action IN ('click', 'iwclick', 'ssclick') THEN event_position IS NOT NULL AND event_position > -1
+            WHEN event_action = 'visitPage' THEN event_pageViewId IS NOT NULL
+            WHEN event_action = 'checkin' THEN event_checkin IS NOT NULL AND event_pageViewId IS NOT NULL
+            ELSE TRUE
+       END;"
+message("Using SSH tunnel & connection to Analytics-Store...")
+events_raw <- wmf::mysql_read(query, "log", con = con)
+message("Closing connection...")
+wmf::mysql_close(con)
+message("Saving raw events data...")
+save(events_raw, file = "data/explore_similar_test.RData")
+```
+
+Next, clean up the data:
+```{r data_cleanup}
+library(magrittr)
+library(ggplot2)
+import::from(
+  # We don't import certain verbs (e.g. distinct, left_join, bind_rows)
+  # to avoid potential name-conflicts and because they're one-time use.
+  dplyr,
+  # Subsetting Verbs
+  keep_where = filter, select,
+  # Grouping Verbs
+  group_by, ungroup,
+  # Manipulation Verbs
+  mutate, arrange, summarize, tally,
+  # Utility Functions
+  case_when, if_else
+)
+source("functions.R")
+load("data/explore_similar_test.RData")
+events <- events_raw
+
+message("De-duplicating events...")
+events <- events %>%
+  mutate(
+    timestamp = lubridate::ymd_hms(timestamp),
+    date = as.Date(timestamp)
+  ) %>%
+  arrange(session_id, event_id, timestamp) %>%
+  dplyr::distinct(session_id, event_id, .keep_all = TRUE)
+cat("Deleted ", nrow(events_raw) - nrow(events), " duplicated events.")
+rm(events_raw) # to free up memory
+
+message("Delete events with negative load time...")
+events <- events %>%
+  keep_where(is.na(load_time) | load_time >= 0)
+
+message("De-duplicating SERPs...")
+SERPs <- events %>%
+  keep_where(event == "searchResultPage") %>%
+  select(c(session_id, page_id, query_hash, search_token)) %>%
+  group_by(session_id, query_hash) %>%
+  mutate(serp_id = page_id[1], cirrus_id = search_token[1]) %>%
+  ungroup %>%
+  select(c(page_id, serp_id, cirrus_id))
+events <- events %>%
+  dplyr::left_join(SERPs, by = "page_id")
+rm(SERPs) # to free up memory
+
+message("Removing events without an associated SERP (orphan clicks and check-ins)...")
+n_evnt <- nrow(events)
+events <- events %>%
+  keep_where(!(is.na(serp_id) & !(event %in% c("visitPage", "checkin")))) %>% # remove orphan click
+  group_by(session_id) %>%
+  keep_where("searchResultPage" %in% event) %>% # remove orphan "visitPage" and "checkin"
+  ungroup
+cat(" Removed ", n_evnt - nrow(events), " orphan (SERP-less) events.")
+rm(n_evnt)
+
+message("Removing sessions falling into multiple test groups")
+temp <- events %>%
+  group_by(session_id) %>%
+  summarize(unique_group = length(unique(group)) == 1)
+cat(" Removed ", sum(!temp$unique_group), " sessions falling into multiple test groups.")
+events <- events %>%
+  keep_where(session_id %in% temp$session_id[temp$unique_group])
+rm(temp)
+
+# Number of wikis in the test
+n_wiki <- length(unique(events$wiki))
+message("Number of wikis in the test: ", n_wiki)
+
+# Remove session with more than 100 searches and only serp
+spider_session <- events %>%
+  group_by(date, group, session_id) %>%
+  summarise(n_search = length(unique(serp_id)),
+            only_serp = sum(event == "searchResultPage") == n()) %>%
+  filter(n_search > 50, only_serp == TRUE) %>%
+  {.$session_id}
+events <- events %>%
+  filter(!(session_id %in% spider_session))
+cat(" Removed ", length(spider_session), " sessions with more than 100 searches and only serp.")
+```
+
+Get full-text search results pages from autocomplete search:
+```{r fetch_fulltext_from_auto, eval=FALSE}
+message("Create an auto-closing SSH tunnel in the background...")
+system("ssh -f -o ExitOnForwardFailure=yes stat1003.eqiad.wmnet -L 3307:analytics-store.eqiad.wmnet:3306 sleep 10")
+library(RMySQL)
+con <- dbConnect(MySQL(), host = "127.0.0.1", group = "client", dbname = "log", port = 3307)
+
+query <- "SELECT
+  timestamp,
+  event_uniqueId AS event_id,
+  event_mwSessionId,
+  event_pageViewId AS page_id,
+  event_searchSessionId AS session_id,
+  event_subTest AS `group`,
+  wiki,
+  event_action AS event,
+  event_scroll,
+  event_checkin,
+  event_searchToken AS search_token,
+  userAgent AS user_agent
+FROM TestSearchSatisfaction2_16909631
+WHERE LEFT(timestamp, 8) >= '20170630' AND LEFT(timestamp, 8) < '20170725' 
+  AND wiki = 'enwiki'
+  AND event_subTest IN('explore_similar_control', 'explore_similar_test') 
+  AND event_source = 'autocomplete'
+  AND event_searchSessionId <> 'explore_similar_test' 
+  AND event_articleId IS NULL
+  AND event_action IN('visitPage', 'checkin')
+  AND CASE WHEN event_action = 'searchResultPage' THEN event_msToDisplayResults IS NOT NULL
+            WHEN event_action IN ('click', 'iwclick', 'ssclick') THEN event_position IS NOT NULL AND event_position > -1
+            WHEN event_action = 'visitPage' THEN event_pageViewId IS NOT NULL
+            WHEN event_action = 'checkin' THEN event_checkin IS NOT NULL AND event_pageViewId IS NOT NULL
+            ELSE TRUE
+       END;"
+message("Using SSH tunnel & connection to Analytics-Store...")
+fulltext_from_auto <- wmf::mysql_read(query, "log", con = con)
+message("Closing connection...")
+wmf::mysql_close(con)
+message("Saving raw events data...")
+save(fulltext_from_auto, file = "data/fulltext_from_auto.RData")
+```
+```{r data_auto_cleanup}
+load("data/fulltext_from_auto.RData")
+
+message("De-duplicating events...")
+fulltext_from_auto <- fulltext_from_auto %>%
+  mutate(
+    timestamp = lubridate::ymd_hms(timestamp),
+    date = as.Date(timestamp)
+  ) %>%
+  arrange(session_id, event_id, timestamp) %>%
+  dplyr::distinct(session_id, event_id, .keep_all = TRUE)
+
+# Data summary
+fulltext_from_auto %>%
+  group_by(group) %>%
+  summarize(n_session = length(unique(session_id)), n_serp = length(unique(page_id)))
+
+message("Group by SERPs...")
+serp_from_auto <- fulltext_from_auto %>%
+  arrange(date, session_id, page_id, timestamp) %>%
+  group_by(wiki, group, session_id, page_id) %>%
+  summarize(from_autocomplete = TRUE, 
+            n_scroll_serp = sum(event_scroll),
+            time_to_first_scroll_serp = ifelse(sum(event_scroll) > 0, min(event_checkin[event_scroll == 1]), NA), 
+            max_checkin_serp = ifelse("checkin" %in% event, max(event_checkin, na.rm = TRUE), 0),
+            status = ifelse(max_checkin_serp == "420", 1, 2)
+  )
+
+message("Join with events...")
+events <- events %>%
+  dplyr::left_join(serp_from_auto, by = c("group", "wiki", "session_id", "page_id")) %>%
+# length(unique(events$page_id[events$from_autocomplete == TRUE]))
+# some serp from auto couldn't find a match because their sessions are identified as spider sessions
+  mutate(from_autocomplete = ifelse(is.na(from_autocomplete), FALSE, from_autocomplete))
+```
+
+Aggregate by search:
+```{r search_data, echo=FALSE}
+message("Aggregating by search...")
+searches <- events %>%
+  keep_where(!(is.na(serp_id))) %>% # remove visitPage and checkin events
+  arrange(date, session_id, serp_id, timestamp) %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(
+    date = date[1],
+    timestamp = timestamp[1],
+    from_autocomplete = sum(from_autocomplete, na.rm = TRUE) > 0, 
+    has_scroll_serp = sum(n_scroll_serp, na.rm = TRUE) > 0,
+    `got same-wiki results` = any(`some same-wiki results` == "TRUE", na.rm = TRUE),
+    engaged = any(event != "searchResultPage") || length(unique(page_id[event == "searchResultPage"])) > 1,
+    engaged_without_es = any(!(event %in% c("searchResultPage", "esclick", "hover-on", "hover-off"))) || length(unique(page_id[event == "searchResultPage"])) > 1,
+    `same-wiki clickthrough` = "click" %in% event,
+    `other clickthrough` = sum(grepl("click", event) & event != "click"),
+    `no. same-wiki results clicked` = length(unique(event_position[event == "click"])),
+    `first clicked same-wiki results position` = ifelse(`same-wiki clickthrough`, event_position[event == "click"][1], NA), # event_position is 0-based
+    `max clicked position (same-wiki)` = ifelse(`same-wiki clickthrough`, max(event_position[event == "click"], na.rm = TRUE), NA),
+    `Query score (F=0.1)` = query_score(event_position, 0.1),
+    `Query score (F=0.5)` = query_score(event_position, 0.5),
+    `Query score (F=0.9)` = query_score(event_position, 0.9)
+  ) %>%
+  ungroup
+
+message("Processing explore-similar clicks...")
+esclick_result <- events %>%
+  keep_where(event == "esclick") %>%
+  cbind(., do.call(dplyr::bind_rows, lapply(.$event_extraParams, parse_extraParams, action = "esclick"))) %>%
+  select(group, wiki, session_id, serp_id, page_id, event_id, hoverId, section, result)
+searches <- esclick_result %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(with_esclick = TRUE) %>%
+  dplyr::right_join(searches, by = c("group", "wiki", "session_id", "serp_id"))
+
+message("Processing explore-similar hover events...")
+hover_over <- events %>%
+  keep_where(event %in% c("hover-on", "hover-off")) %>%
+  cbind(., do.call(dplyr::bind_rows, lapply(.$event_extraParams, parse_extraParams, action = c("hover-on", "hover-off")))) %>%
+  select(group, wiki, session_id, serp_id, page_id, event_id, event, hoverId, section, results)
+searches <- hover_over %>%
+  keep_where(event == "hover-on") %>%
+  group_by(group, wiki, session_id, serp_id) %>%
+  summarize(n_hover = length(unique(hoverId))) %>%
+  dplyr::right_join(searches, by = c("group", "wiki", "session_id", "serp_id"))
+
+searches <- searches %>%
+  dplyr::mutate(with_esclick = ifelse(is.na(with_esclick), FALSE, with_esclick),
+                n_hover = ifelse(is.na(n_hover), 0, n_hover))
+```
+
+## Metrics comparison
+
+### Daily completion rate
+```{r daily_completion}
+searches %>%
+  group_by(group, date) %>%
+  summarize(`All Searches` = n(), `Searches with Results` = sum(`got same-wiki results`), `Searches with Clicks` = sum(`same-wiki clickthrough`), `Searches with Hover` = sum(n_hover > 0)) %>%
+  gather(key=Group, value = count, -date, -group) %>%
+  ggplot(aes(x=date, y=count, colour=Group)) + 
+  geom_line(size=1.2) +
+  scale_x_date(name = "Date") +
+  scale_y_continuous(labels=polloi::compress, name = "Number of Searches") +
+  ggtitle("Daily fulltext searches on desktop") +
+  facet_wrap(~ group, scales = "free_y") + 
+  theme_facet(border = FALSE)
+```
+
+```{r zrr, echo=FALSE}
+zrr <- searches %>%
+  group_by(group) %>%
+  summarize(zero = sum(!`got same-wiki results`), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$zero, n = .$n_search, conf.level = 0.95))
+  )
+```
+```{r daily_zrr}
+searches %>%
+  group_by(date, group) %>%
+  summarize(n_search = n(), zero = sum(!`got same-wiki results`)) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$zero, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = group, y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = zrr, aes(yintercept = mean, color = group), linetype = "dashed") +
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_brewer("Group", palette = "Set1") +
+  scale_fill_brewer("Group", palette = "Set1") +
+  scale_y_continuous("Zero Results Rate", labels = scales::percent_format()) +
+  theme_min()
+  # labs(x = NULL, title = "Daily search-wise clickthrough rates of experimental groups across wikis",
+  #      subtitle = paste("Dashed lines mark the overall clickthrough rate from", figure_caps("Clickthrough Rates (1)", display = "cite")),
+  #      caption = "* For this engagement analysis we focused on searches that yielded same-wiki and cross-wiki results, even if the end user did not necessarily get to see them.")
+```
+
+```{r ctr}
+ctr <- searches %>% 
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(clickthroughs = sum(`same-wiki clickthrough`), n_search = n()) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$clickthroughs, .$n_search, conf.level = 0.95))
+```
+```{r daily_ctr}
+searches %>%
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(date, group) %>%
+  summarize(n_search = n(), clickthroughs = sum(`same-wiki clickthrough`)) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$clickthroughs, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = group, y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = ctr, aes(yintercept = mean, color = group), linetype = "dashed") +
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_brewer("Group", palette = "Set1") +
+  scale_fill_brewer("Group", palette = "Set1") +
+  scale_y_continuous("Clickthrough Rate", labels = scales::percent_format()) +
+  theme_min()
+  # labs(x = NULL, title = "Daily search-wise clickthrough rates of experimental groups across wikis",
+  #      subtitle = paste("Dashed lines mark the overall clickthrough rate from", figure_caps("Clickthrough Rates (1)", display = "cite")),
+  #      caption = "* For this engagement analysis we focused on searches that yielded same-wiki and cross-wiki results, even if the end user did not necessarily get to see them.")
+```
+
+```{r hover_rate}
+hover_rate <- searches %>% 
+  keep_where(group == "explore_similar_test", `got same-wiki results`) %>% 
+  group_by(group) %>% 
+  summarize(hover = sum(n_hover > 0), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$hover, n = .$n_search, conf.level = 0.95))
+  )
+```
+```{r daily_hover_rate}
+searches %>%
+  keep_where(group == "explore_similar_test", `got same-wiki results`) %>% 
+  group_by(group, date) %>%
+  summarize(hover = sum(n_hover > 0), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$hover, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  ggplot(aes(x = date, color = "#377EB8", y = mean, ymin = lower, ymax = upper)) +
+  geom_hline(data = hover_rate, aes(yintercept = mean, color = "#377EB8"), linetype = "dashed") + #9.8%
+  geom_ribbon(aes(ymin = lower, ymax = upper, fill = "#377EB8"), alpha = 0.1, color = NA) +
+  geom_line() +
+  scale_color_manual("Group", values = "#377EB8", labels = "Test") +
+  scale_fill_manual("Group", values = "#377EB8", labels = "Test") +
+  scale_y_continuous("Hover-over Rate", labels = scales::percent_format()) +
+  theme_min()
+  # labs(x = NULL, title = "Daily search-wise clickthrough rates of experimental groups across wikis",
+  #      subtitle = paste("Dashed lines mark the overall clickthrough rate from", figure_caps("Clickthrough Rates (1)", display = "cite")),
+  #      caption = "* For this engagement analysis we focused on searches that yielded same-wiki and cross-wiki results, even if the end user did not necessarily get to see them.")
+```
+
+### Same wiki clickthrough rate
+```{r engagement_samewiki, echo=FALSE}
+searches %>% 
+  keep_where(`got same-wiki results` == TRUE, n_hover > 0) %>%
+  group_by(group) %>%
+  summarize(clickthroughs = sum(`same-wiki clickthrough`), n_search = n()) %>%
+  dplyr::do(binom::binom.bayes(.$clickthroughs, .$n_search, conf.level = 0.95)) %>%
+  mutate(group = "Search with hover") %>%
+  dplyr::bind_rows(ctr) %>%
+  pointrange_chart(y_lab = "Clickthrough rate", title = "Same-wiki clickthrough rates by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+how many search has hover, the ctr is not significantly different. So hover didn't lead to higher CTR.
+
+### Search/session abandonment
+
+The actions that make test group more engaged are es related actions -- if not counting es actions, the engage rate are similar, that means seeing es result not leading to more clicks or SERP page-turn. But could be hover by accident...
+```{r search_engage_rate}
+searches %>%
+  keep_where(`got same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  #summarize(engaged = sum(engaged_without_es), n_search = n()) %>%
+  summarize(engaged = sum(engaged), n_search = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$engaged, n = .$n_search, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Search Engage Rate", title = "Proportion of searches that performed other actions on search result pages, by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+## Other
+
+### Return Rate
+
+Users may click back to search page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:
+
+- Among users with at least a click in their search, the proportion of searches that return to the same search page
+- Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different serp but in the same session)
+
+```{r return_rate}
+returnRate_to_same_search <- events %>%
+  keep_where(!(event %in% c("visitPage", "checkin"))) %>%
+  group_by(group, serp_id) %>%
+  keep_where(sum(grepl("click", event)) > 0) %>% # Among search with at least 1 click
+  arrange(group, serp_id, timestamp) %>%
+  mutate(n_click_cumsum = cumsum(grepl("click", event))) %>%
+  keep_where(n_click_cumsum > 0) %>% # delete serp and hover before first click
+  summarise(comeback = sum(event %in% c("searchResultPage", "hover-on", "hover-off")) > 0 | sum(n_click_cumsum > 1) > 0) %>% # comeback to the same serp or make another click or hover
+  group_by(group) %>%
+  summarise(return_to_same_search = sum(comeback), n_search = length(unique(serp_id))) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$return_to_same_search, .$n_search, conf.level = 0.95))
+
+returnRate_to_other_search <- events %>%
+  keep_where(!(event %in% c("visitPage", "checkin"))) %>%
+  group_by(group, session_id) %>%
+  keep_where(sum(grepl("click", event)) > 0) %>% # Among session with at least 1 click
+  arrange(group, session_id, timestamp) %>%
+  mutate(n_click_cumsum = cumsum(grepl("click", event))) %>%
+  keep_where(n_click_cumsum > 0) %>% # delete serp before first click
+  summarise(another_search = length(unique(serp_id)) > 1) %>% # comeback to make another search
+  group_by(group) %>%
+  summarise(return_to_make_another_search = sum(another_search), n_session = length(unique(session_id))) %>%
+  group_by(group) %>%
+  dplyr::do(binom::binom.bayes(.$return_to_make_another_search, .$n_session, conf.level = 0.95))
+
+dplyr::bind_rows("Return to the same search page" = returnRate_to_same_search, 
+                 "Return to make different search" = returnRate_to_other_search, .id = "type") %>%
+  pointrange_chart(y_lab = "Return rate", title = "Return rate after users clickthrough on search engine result pages",
+                   subtitle = "With 95% credible intervals.") + 
+  facet_wrap(~ type, scales = "free_y") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+### SERP dwell time
+
+```{r serp_survival}
+temp <- events %>% keep_where(event == "searchResultPage", from_autocomplete == TRUE, `some same-wiki results` == TRUE)
+cat("There are", length(unique(temp$page_id)), "fulltext search result pages from autocomplete.", 
+    length(unique(temp$page_id[temp$group == "explore_similar_control"])), "of them are in control group and", 
+    length(unique(temp$page_id[temp$group == "explore_similar_test"])), "of them are in test group.")
+temp$SurvObj <- with(temp, survival::Surv(max_checkin_serp, status == 2))
+fit <- survival::survfit(SurvObj ~ group, data = temp)
+ggsurv <- survminer::ggsurvplot(
+  fit,
+  conf.int = TRUE,
+  xlab = "T (Dwell Time in seconds)",
+  ylab = "Proportion of SERP from autocomplete longer than T (P%)",
+  surv.scale = "percent",
+  palette = "Set1",
+  legend = "bottom",
+  legend.title = "Group",
+  legend.labs = c("explore_similar_control", "explore_similar_test"),
+  ggtheme = theme_min()
+)
+ggsurv$plot +
+  labs(
+    title = "Survival curves by test group",
+    subtitle = "With 95% confidence intervals."
+  )
+rm(temp)
+```
+
+```{r scroll_serp}
+events %>% 
+  keep_where(event == "searchResultPage", `some same-wiki results` == TRUE) %>%
+  group_by(group) %>%
+  summarize(scrolls = sum(n_scroll_serp > 0), n_serp = n()) %>%
+  ungroup %>%
+  cbind(
+    as.data.frame(binom:::binom.bayes(x = .$scrolls, n = .$n_serp, conf.level = 0.95))
+  ) %>%
+  pointrange_chart(y_lab = "Proportion of SERPs", 
+                   title = "Proportion of SERPs with scroll by test group",
+                   subtitle = "With 95% credible intervals.") + 
+  theme_facet(border = FALSE, clean_xaxis = TRUE)
+```
+
+### SERP load time
+
+```{r serp_loadtime}
+events %>%
+  keep_where(event == "searchResultPage", `some same-wiki results` == TRUE) %>%
+  ggplot(aes(x=load_time)) + 
+  scale_x_sqrt() + 
+  geom_density(aes(group=group, colour=group, fill=group), alpha=0.3) + 
+  labs(x = "Load Time", y = "Density", title = "Search result page load time by test group") +
+  theme_min()
+```
+
+
