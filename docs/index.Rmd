@@ -11,14 +11,12 @@ author:
   name: "Chelsy Xie"
 - affiliation: "Product Manager (Analysis, Search Frontend), Wikimedia Foundation"
   name: "Deb Tankersley"
-# Add Dan David, Trey
 abstract: >
-  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide users with related pages, categories and suggested languages in each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar results. Users hover over the 'Related' section most often, followed by 'categories' and 'languages' sections. Since the time users spent on reading the similar information is too short, we doubt that 80% of the hover-overs happened by accident. Our analysis also showed that providing information similar to search results did not improve user engagement, but it did not hurt user experience neither. 
-  Given the fact that very few users see the simiar results and the feedbacks we got from usertesting.com told us that users thought it is userful, we suggest doing another test which always shows the similar links without hover-on.
+  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.
 output:
   html_document:
     includes:
-      after_body: suffix.html # not showing, need to fix css???
+      after_body: suffix.html
     code_folding: hide
     css: style.css
     fig_caption: yes
@@ -41,6 +39,7 @@ output:
     keep_tex: yes
     latex_engine: xelatex
     template: svm-latex-ms.tex
+bibliography: bibliography.bib
 link-citations: yes
 nocite: |
   @R-rmarkdown, @R-magrittr, @R-tidyr, @R-dplyr, @R-ggplot2, @R-wmf
@@ -112,13 +111,13 @@ print_caption <- function(formatted_caption) {
   cat(paste0('<p class = "caption">', formatted_caption, '</p>', collapse = ''))
 }
 # Add captions:
-figure_caps(name = "Example", caption = "Example of explore similar widget on English Wikipedia.")
+figure_caps(name = "Example", caption = "Example of explore similar widget on English Wikipedia when a user move the mouse on the 'Related' section of the first search result.")
 table_caps(name = "Session Counts", caption = "Number of search sessions used for analysis by group. Each search session may have several individual searches.")
 table_caps(name = "Hover Counts", caption = "Number of hover-on actions by section and number of results shown. For example, there are 2 hovers on the 'Categories' section and see 0 result.")
 table_caps(name = "Hover Time", caption = "Number of hover-over that stay on the widget for n seconds. For example, there are 196 hover-over actions that stay on the widget for less than 1 seconds. The dwell time is the difference between the timestamp of hover-off and hover-on.")
 figure_caps(name = "Daily Searches", caption = "Number of all searches, searches with results, searches with clickthrough and searches with hover-over, by day and group.")
 figure_caps(name = "Daily ZRR CTR", caption = "Daily search-wise zero results rate and clickthrough rates of experimental groups. Dashed lines mark the overall zero results rate and clickthrough rate.")
-figure_caps(name = "Daily Hover Rate", caption = "Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate.")
+figure_caps(name = "Daily Hover Rate", caption = "Daily search-wise hover-over rate of the test group. Dashed lines mark the overall hover-over rate.")
 figure_caps(name = "Overall CTR", caption = "Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over.")
 figure_caps(name = "Search Abandonment", caption = "Search abandon rate by test group. The graph on the left shows the proportion of searches without any actions on the result page. The right one shows the proportion of searches that have no click, reload or page-turn.")
 figure_caps(name = "Scroll on SERP", caption = "Proportion of search results pages with scroll by test group.")
@@ -139,7 +138,7 @@ events <- events_raw
 ```
 # Introduction
 
-To do ([Phab ticket](https://phabricator.wikimedia.org/T149809))
+In the ongoing effort to improve the discoverability of all the world's knowledge, the Discovery team is proposing an enhancement to the search result snippets on the search results page on Wikipedia ([Special:Search](https://www.mediawiki.org/wiki/Special:Search)). The goal of this feature is to surface related content for each individual search result, so that even when the search result itself isn't entirely useful, perhaps its related content could be.
 
 ```{r example_caption, include=FALSE}
 example_cap <- format_caption(figure_caps, "Example")
@@ -150,30 +149,24 @@ example_dim <- attr(example_png, "info")$dim
 grid::grid.raster(example_png, interpolate = TRUE)
 ```
 
-```{r "test group description", results='asis', echo=FALSE, eval=FALSE}
-descriptions <- list(
-  `Control` = "This group received the baseline user experience, which only includes the search results from the wiki they are on. To make their experience comparable to the test groups with respect to latency, we performed the search across the additional indices, but did not show the results to the end user.",
-  `Test` = "This group received the experimental user experience, which includes search results from other wikis (if any were returned). The boxes holding the results (one box for each wiki) were ordered according to recall -- the volume of search results returned for each respective wiki."
-)
-if (is_html()) {
-  cat("<span class = \"test-group-1\">Control</span>
-:   ", descriptions$`Control` , "
+For the users who received the experimental user experience (UX), three new links would be added beside the green metadata on each search result: related pages, categories and languages. When hovered over, these link would expand the search result into a 'card' with related content (see `r figure_caps("Example", display = "cite")`). These links would reveal the following related content:
 
-<span class = \"test-group-2\">Test</span>
-:   ", descriptions$`Test`)
-} else {
-  cat("\\begin{itemize}
-  \\item{\\textbf{Control}: ", descriptions$`Control` , "}
-  \\item{\\textbf{Test}: ", descriptions$`Test` , "}
-\\end{itemize}")
-}
-```
+- Up to 3 related page links containing metadata (as is available): thumbnail image, name of related page and metadata description
+- Up to 9 links to categories that the article was tagged with
+- Any other languages the page is available in
+
+This extended content would be activated by hovering over one of the three links. Also, in order to avoid overcrowding the UI, these links would only be visible when hovering over the search result. There was one test group of users who received the experimental UX, and one control group that did not and received the currently existing search results page. 
+
+The primary questions we wanted to answer are:
+
+- Did users who saw the additional related content engage with those results?
+- Was the overall engagement with search results better or worse compared to the controls?
 
 On 30 June 2017 we deployed an A/B test on the desktop version of English Wikipedia to assess the efficacy of this feature. The test concluded on 24 July 2017, after a total of `r nrow(dplyr::distinct(events, session_id))` search sessions had been anonymously tracked.
 
 # Methods
 
-This test's event logging (EL) was implemented in JavaScript according to the [TestSearchSatisfaction2 (TSS2)](https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&oldid=16909631) schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R.
+This test's event logging (EL) was implemented in JavaScript according to the [TestSearchSatisfaction2 (TSS2)](https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&oldid=16909631) schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R [@R-base].
 
 ```{r pkgs}
 import::from(dplyr, group_by, ungroup, keep_where = filter, mutate, arrange, select, transmute, left_join, summarize, bind_rows, case_when, if_else, rename, tally)
@@ -183,7 +176,7 @@ library(tidyr)
 
 ## Data
 
-1 in 1000 users are included in EventLogging (on enwiki that's about 2K full-text searchers, according to [T163273](https://phabricator.wikimedia.org/T163273)). Of those 1 in 1000 users, 1 in 2 are included in the test (that's about 1K sessions daily). Of those 1 in 2 users, 50% go in a test group, labeled "explore_similar_test", and the other 50% of users will go in a control group, labeled "explore_similar_control" (that's about 500 sessions for each bucket). However, we failed to notice that the sampling didn't work as we expected -- we got only about 100 sessions per day for each bucket. But we've got enough data since we ran this test for 25 days. 
+1 in 1000 users are included in Event-logging (on English Wikipedia that's about 2000 full-text searchers, according to [T163273](https://phabricator.wikimedia.org/T163273)). Of those 1 in 1000 users, 1 in 2 are included in the test (that's about 1000 sessions daily). Of those 1 in 2 users, 50% go in the test group (as described above), and the other 50% of users will go in the control group (that's about 500 sessions for each bucket). However, we failed to notice that the sampling didn't work as we expected -- we got only about 100 sessions per day for each bucket. But we got enough data since we ran this test longer than planned -- for 25 days. 
 
 ```{r data_cleanup}
 #De-duplicating events...
@@ -347,14 +340,13 @@ After the test has concluded on `r format(max(events$date), "%d %B %Y")`, we pro
 
 ```{r summary_stats_table, results='asis', echo=FALSE}
 searches %>%
-  group_by(`Test group` = group, wiki) %>%
+  group_by(`Test group` = group) %>%
   summarize(
     `Search sessions` = length(unique(session_id)),
     `Searches recorded` = n()
   ) %>%
   ungroup %>% {
     rbind(., tibble::tibble(
-      `wiki` = "All wikis",
       `Test group` = "Total",
       `Search sessions` = sum(.$`Search sessions`),
       `Searches recorded` = sum(.$`Searches recorded`)
@@ -369,7 +361,7 @@ searches %>%
 
 # Results
 
-There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions.
+There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions (see `r figure_caps("Daily Searches", display = "cite")` for daily counts and `r figure_caps("Daily ZRR CTR", display = "cite")` for daily zero result rates and clickthrough rates). The hover-over rate is 9.8% (see `r figure_caps("Daily Hover Rate", display = "cite")`).
 
 ```{r daily_searches_caption, echo=FALSE}
 daily_searches_cap <- format_caption(figure_caps, "Daily Searches")
@@ -472,12 +464,12 @@ searches %>%
   scale_fill_manual("Group", values = "#377EB8", labels = "Test") +
   scale_y_continuous("Hover-over Rate", labels = scales::percent_format()) +
   theme_min() + 
-  labs(title = "Daily search-wise hover-over rates by group")
+  labs(title = "Daily search-wise hover-over rates")
 ```
 
 ## Engagement with the results
 
-`r figure_caps("Overall CTR", display = "cite")` compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn't lead to higher clickthrough rate.
+`r figure_caps("Overall CTR", display = "cite")` compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn't lead to a higher clickthrough rate.
 ```{r engagement_samewiki_caption, echo=FALSE}
 ctr_cap <- format_caption(figure_caps, "Overall CTR")
 ```
@@ -494,7 +486,12 @@ searches %>%
   theme_facet(border = FALSE, clean_xaxis = TRUE)
 ```
 
-After we show the search result page to a user, if the user doesn't do anything -- no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In `r figure_caps("Search Abandonment", display = "cite")`, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because 1) the control group didn't track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn't happen accidently; 2) according to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although `r figure_caps("Scroll on SERP", display = "cite")` shows that the proportion of search result pages with scroll in the test group is not significantly higher.). Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).
+After we show the search result page to a user, if the user doesn't do anything -- no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In `r figure_caps("Search Abandonment", display = "cite")`, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because:
+
+- The control group didn't track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn't happen by accident. In other words, the control group users might move their mouse on the pages, but they didn't get recorded; 
+- According to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although `r figure_caps("Scroll on SERP", display = "cite")` shows that the proportion of search result pages with scroll in the test group is not significantly higher.). 
+
+Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).
 
 ```{r search_abandon_rate_caption, echo=FALSE}
 search_abandon_rate_cap <- format_caption(figure_caps, "Search Abandonment")
@@ -589,7 +586,7 @@ hover_over %>%
 ```
 
 `r table_caps("Hover Time", display = "cite")` shows the approximate time users stay on the widget after they hover-on.
-More than 80% of hover-over last less than 2 seconds, which means they are either not interested in the information or just hover-over by accident. 
+More than 80% of hover-on last less than 2 seconds, which means they are either not interested in the related content at all or just hover-over by accident. 
 ```{r hover_time}
 hover_over %>%
   group_by(hoverId) %>%
@@ -609,12 +606,12 @@ Unfortunately, we didn't record the position of the same-wiki search result when
 
 ## Return Rate
 
-Users may click back to search page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:
+Users may click back to the search result page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:
 
 - Among users with at least a click in their search, the proportion of searches that return to the same search page
-- Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different serp but in the same session)
+- Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different search result page but in the same session)
 
-From `r figure_caps("Return Rate", display = "cite")`, we can see the return rates are not significantly different between groups. 
+From `r figure_caps("Return Rate", display = "cite")`, we can see the return rates are not significantly different between experimental groups. 
 
 ```{r return_rate_caption, echo=FALSE}
 return_rate_cap <- format_caption(figure_caps, "Return Rate")
@@ -656,7 +653,7 @@ dplyr::bind_rows("Return to the same search page" = returnRate_to_same_search,
 
 ## Load time of search results pages
 
-We can see that the distributions of search result pages' load time of the two groups almost overlap.
+`r figure_caps("Load Time", display = "cite")` shows that the distributions of search result pages' load time of the two experimental groups almost overlap.
 ```{r serp_loadtime_caption, echo=FALSE}
 serp_loadtime_cap <- format_caption(figure_caps, "Load Time")
 ```
@@ -666,17 +663,19 @@ events %>%
   ggplot(aes(x=load_time)) + 
   scale_x_sqrt() + 
   geom_density(aes(group=group, colour=group, fill=group), alpha=0.3) + 
-  labs(x = "Load Time", y = "Density", title = "Distribution of search result page load time by test group") +
+  labs(x = "Load Time (ms)", y = "Density", title = "Distribution of search result page load time by test group") +
   theme_min()
 ```
 
 # Discussion
 
-To do
+We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct but also not too visually obtrusive. Additionally, it would be helpful to record the position of the same-wiki result on the page when users hover-over or click on the related content under it.
 
+<!--
 # Acknowledgements
 
 To do
+-->
 
 ```{r bibliograpby, results='asis', echo=FALSE}
 if (is_html()) {

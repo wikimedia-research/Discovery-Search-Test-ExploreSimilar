@@ -293,7 +293,7 @@ Data Analyst, Wikimedia Foundation<br><h4 class="author"><em>Deb Tankersley</em>
 Product Manager (Analysis, Search Frontend), Wikimedia Foundation<br><h4 class="date"><em>24 August 2017</em></h4>
 <div class="abstract">
 <p class="abstract">Abstract</p>
-<p>Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding ‘explore similar’ widget to provide users with related pages, categories and suggested languages in each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar results. Users hover over the ‘Related’ section most often, followed by ‘categories’ and ‘languages’ sections. Since the time users spent on reading the similar information is too short, we doubt that 80% of the hover-overs happened by accident. Our analysis also showed that providing information similar to search results did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users see the simiar results and the feedbacks we got from usertesting.com told us that users thought it is userful, we suggest doing another test which always shows the similar links without hover-on.</p>
+<p>Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding ‘explore similar’ widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the ‘Related’ section most often, followed by ‘Categories’ and ‘Languages’ sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.</p>
 </div>
 
 </div>
@@ -318,24 +318,36 @@ $(function() {
 </p>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>To do (<a href="https://phabricator.wikimedia.org/T149809">Phab ticket</a>)</p>
+<p>In the ongoing effort to improve the discoverability of all the world’s knowledge, the Discovery team is proposing an enhancement to the search result snippets on the search results page on Wikipedia (<a href="https://www.mediawiki.org/wiki/Special:Search">Special:Search</a>). The goal of this feature is to surface related content for each individual search result, so that even when the search result itself isn’t entirely useful, perhaps its related content could be.</p>
 <div class="figure" style="text-align: center">
-<img src="index_files/figure-html/example_figure-1.png" alt="**Figure 1**: Example of explore similar widget on English Wikipedia." height="4in" />
+<img src="index_files/figure-html/example_figure-1.png" alt="**Figure 1**: Example of explore similar widget on English Wikipedia when a user move the mouse on the 'Related' section of the first search result." height="4in" />
 <p class="caption">
-<strong>Figure 1</strong>: Example of explore similar widget on English Wikipedia.
+<strong>Figure 1</strong>: Example of explore similar widget on English Wikipedia when a user move the mouse on the ‘Related’ section of the first search result.
 </p>
 </div>
+<p>For the users who received the experimental user experience (UX), three new links would be added beside the green metadata on each search result: related pages, categories and languages. When hovered over, these link would expand the search result into a ‘card’ with related content (see Figure 1). These links would reveal the following related content:</p>
+<ul>
+<li>Up to 3 related page links containing metadata (as is available): thumbnail image, name of related page and metadata description</li>
+<li>Up to 9 links to categories that the article was tagged with</li>
+<li>Any other languages the page is available in</li>
+</ul>
+<p>This extended content would be activated by hovering over one of the three links. Also, in order to avoid overcrowding the UI, these links would only be visible when hovering over the search result. There was one test group of users who received the experimental UX, and one control group that did not and received the currently existing search results page.</p>
+<p>The primary questions we wanted to answer are:</p>
+<ul>
+<li>Did users who saw the additional related content engage with those results?</li>
+<li>Was the overall engagement with search results better or worse compared to the controls?</li>
+</ul>
 <p>On 30 June 2017 we deployed an A/B test on the desktop version of English Wikipedia to assess the efficacy of this feature. The test concluded on 24 July 2017, after a total of 5180 search sessions had been anonymously tracked.</p>
 </div>
 <div id="methods" class="section level1">
 <h1>Methods</h1>
-<p>This test’s event logging (EL) was implemented in JavaScript according to the <a href="https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&amp;oldid=16909631">TestSearchSatisfaction2 (TSS2)</a> schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R.</p>
+<p>This test’s event logging (EL) was implemented in JavaScript according to the <a href="https://meta.wikimedia.org/w/index.php?title=Schema:TestSearchSatisfaction2&amp;oldid=16909631">TestSearchSatisfaction2 (TSS2)</a> schema, which is the one used by the Search team for its metrics on desktop, data was stored in a MySQL database, and analyzed and reported using R <span class="citation">(R Core Team <a href="#ref-R-base">2016</a>)</span>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">import<span class="op">::</span><span class="kw">from</span>(dplyr, group_by, ungroup, <span class="dt">keep_where =</span> filter, mutate, arrange, select, transmute, left_join, summarize, bind_rows, case_when, if_else, rename, tally)
 <span class="kw">library</span>(ggplot2)
 <span class="kw">library</span>(tidyr)</code></pre></div>
 <div id="data" class="section level2">
 <h2>Data</h2>
-<p>1 in 1000 users are included in EventLogging (on enwiki that’s about 2K full-text searchers, according to <a href="https://phabricator.wikimedia.org/T163273">T163273</a>). Of those 1 in 1000 users, 1 in 2 are included in the test (that’s about 1K sessions daily). Of those 1 in 2 users, 50% go in a test group, labeled “explore_similar_test”, and the other 50% of users will go in a control group, labeled “explore_similar_control” (that’s about 500 sessions for each bucket). However, we failed to notice that the sampling didn’t work as we expected – we got only about 100 sessions per day for each bucket. But we’ve got enough data since we ran this test for 25 days.</p>
+<p>1 in 1000 users are included in Event-logging (on English Wikipedia that’s about 2000 full-text searchers, according to <a href="https://phabricator.wikimedia.org/T163273">T163273</a>). Of those 1 in 1000 users, 1 in 2 are included in the test (that’s about 1000 sessions daily). Of those 1 in 2 users, 50% go in the test group (as described above), and the other 50% of users will go in the control group (that’s about 500 sessions for each bucket). However, we failed to notice that the sampling didn’t work as we expected – we got only about 100 sessions per day for each bucket. But we got enough data since we ran this test longer than planned – for 25 days.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#De-duplicating events...</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">mutate</span>(
@@ -499,9 +511,6 @@ searches &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
 Test group
 </th>
 <th style="text-align:left;">
-wiki
-</th>
-<th style="text-align:left;">
 Search sessions
 </th>
 <th style="text-align:left;">
@@ -515,9 +524,6 @@ Searches recorded
 Control
 </td>
 <td style="text-align:left;">
-enwiki
-</td>
-<td style="text-align:left;">
 2,570
 </td>
 <td style="text-align:left;">
@@ -529,9 +535,6 @@ enwiki
 Test
 </td>
 <td style="text-align:left;">
-enwiki
-</td>
-<td style="text-align:left;">
 2,566
 </td>
 <td style="text-align:left;">
@@ -541,9 +544,6 @@ enwiki
 <tr>
 <td style="text-align:left;">
 Total
-</td>
-<td style="text-align:left;">
-All wikis
 </td>
 <td style="text-align:left;">
 5,136
@@ -558,7 +558,7 @@ All wikis
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<p>There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions.</p>
+<p>There are around 185 searches everyday in each group, around 170 of them return at least one same-wiki result, and about 65 searches have clickthroughs. In the test group, about 20 searches have hover-over actions (see Figure 2 for daily counts and Figure 3 for daily zero result rates and clickthrough rates). The hover-over rate is 9.8% (see Figure 4).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">searches <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(group, date) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">summarize</span>(<span class="st">`</span><span class="dt">All Searches</span><span class="st">`</span> =<span class="st"> </span><span class="kw">n</span>(), <span class="st">`</span><span class="dt">Searches with Results</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span>), <span class="st">`</span><span class="dt">Searches with Clicks</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span>), <span class="st">`</span><span class="dt">Searches with Hover</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>)) <span class="op">%&gt;%</span>
@@ -652,16 +652,16 @@ cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2) <span
 <span class="st">  </span><span class="kw">scale_fill_manual</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">values =</span> <span class="st">&quot;#377EB8&quot;</span>, <span class="dt">labels =</span> <span class="st">&quot;Test&quot;</span>) <span class="op">+</span>
 <span class="st">  </span><span class="kw">scale_y_continuous</span>(<span class="st">&quot;Hover-over Rate&quot;</span>, <span class="dt">labels =</span> scales<span class="op">::</span><span class="kw">percent_format</span>()) <span class="op">+</span>
 <span class="st">  </span><span class="kw">theme_min</span>() <span class="op">+</span><span class="st"> </span>
-<span class="st">  </span><span class="kw">labs</span>(<span class="dt">title =</span> <span class="st">&quot;Daily search-wise hover-over rates by group&quot;</span>)</code></pre></div>
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">title =</span> <span class="st">&quot;Daily search-wise hover-over rates&quot;</span>)</code></pre></div>
 <div class="figure">
-<img src="index_files/figure-html/daily_hover_rate-1.png" alt="**Figure 4**: Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate." width="\textwidth" />
+<img src="index_files/figure-html/daily_hover_rate-1.png" alt="**Figure 4**: Daily search-wise hover-over rate of the test group. Dashed lines mark the overall hover-over rate." width="\textwidth" />
 <p class="caption">
-<strong>Figure 4</strong>: Daily search-wise hover-over rate of experimental groups. Dashed lines mark the overall hover-over rate.
+<strong>Figure 4</strong>: Daily search-wise hover-over rate of the test group. Dashed lines mark the overall hover-over rate.
 </p>
 </div>
 <div id="engagement-with-the-results" class="section level2">
 <h2>Engagement with the results</h2>
-<p>Figure 5 compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn’t lead to higher clickthrough rate.</p>
+<p>Figure 5 compares same-wiki clickthrough rates between control and test group, and also shows the clickthrough rates among searches with at least one hover-over. The three clickthrough rates are not significantly different, which means showing related information didn’t lead to a higher clickthrough rate.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">searches <span class="op">%&gt;%</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>, n_hover <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
@@ -678,7 +678,12 @@ cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2) <span
 <strong>Figure 5</strong>: Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over.
 </p>
 </div>
-<p>After we show the search result page to a user, if the user doesn’t do anything – no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In Figure 6, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because 1) the control group didn’t track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn’t happen accidently; 2) according to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although Figure 7 shows that the proportion of search result pages with scroll in the test group is not significantly higher.). Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).</p>
+<p>After we show the search result page to a user, if the user doesn’t do anything – no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In Figure 6, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because:</p>
+<ul>
+<li>The control group didn’t track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn’t happen by accident. In other words, the control group users might move their mouse on the pages, but they didn’t get recorded;</li>
+<li>According to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although Figure 7 shows that the proportion of search result pages with scroll in the test group is not significantly higher.).</li>
+</ul>
+<p>Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p1 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
@@ -899,7 +904,7 @@ Sum
 </tr>
 </tbody>
 </table>
-<p>Table 3 shows the approximate time users stay on the widget after they hover-on. More than 80% of hover-over last less than 2 seconds, which means they are either not interested in the information or just hover-over by accident.</p>
+<p>Table 3 shows the approximate time users stay on the widget after they hover-on. More than 80% of hover-on last less than 2 seconds, which means they are either not interested in the related content at all or just hover-over by accident.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">hover_over <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(hoverId) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">length</span>(event_id) <span class="op">==</span><span class="st"> </span><span class="dv">2</span>) <span class="op">%&gt;%</span>
@@ -1013,12 +1018,12 @@ Proportion
 </div>
 <div id="return-rate" class="section level2">
 <h2>Return Rate</h2>
-<p>Users may click back to search page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:</p>
+<p>Users may click back to the search result page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:</p>
 <ul>
 <li>Among users with at least a click in their search, the proportion of searches that return to the same search page</li>
-<li>Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different serp but in the same session)</li>
+<li>Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different search result page but in the same session)</li>
 </ul>
-<p>From Figure 9, we can see the return rates are not significantly different between groups.</p>
+<p>From Figure 9, we can see the return rates are not significantly different between experimental groups.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">returnRate_to_same_search &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>))) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(group, serp_id) <span class="op">%&gt;%</span>
@@ -1060,13 +1065,13 @@ dplyr<span class="op">::</span><span class="kw">bind_rows</span>(<span class="st
 </div>
 <div id="load-time-of-search-results-pages" class="section level2">
 <h2>Load time of search results pages</h2>
-<p>We can see that the distributions of search result pages’ load time of the two groups almost overlap.</p>
+<p>Figure 10 shows that the distributions of search result pages’ load time of the two experimental groups almost overlap.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>, <span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x=</span>load_time)) <span class="op">+</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">scale_x_sqrt</span>() <span class="op">+</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">geom_density</span>(<span class="kw">aes</span>(<span class="dt">group=</span>group, <span class="dt">colour=</span>group, <span class="dt">fill=</span>group), <span class="dt">alpha=</span><span class="fl">0.3</span>) <span class="op">+</span><span class="st"> </span>
-<span class="st">  </span><span class="kw">labs</span>(<span class="dt">x =</span> <span class="st">&quot;Load Time&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Density&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Distribution of search result page load time by test group&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">x =</span> <span class="st">&quot;Load Time (ms)&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Density&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Distribution of search result page load time by test group&quot;</span>) <span class="op">+</span>
 <span class="st">  </span><span class="kw">theme_min</span>()</code></pre></div>
 <div class="figure">
 <img src="index_files/figure-html/serp_loadtime-1.png" alt="**Figure 10**: Distribution of search result pages' load time by test group." width="\textwidth" />
@@ -1078,17 +1083,42 @@ dplyr<span class="op">::</span><span class="kw">bind_rows</span>(<span class="st
 </div>
 <div id="discussion" class="section level1">
 <h1>Discussion</h1>
-<p>To do</p>
+<p>We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the ‘Related’ section most often, followed by ‘Categories’ and ‘Languages’ sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct but also not too visually obtrusive. Additionally, it would be helpful to record the position of the same-wiki result on the page when users hover-over or click on the related content under it.</p>
+<!--
+# Acknowledgements
+
+To do
+-->
 </div>
-<div id="acknowledgements" class="section level1">
-<h1>Acknowledgements</h1>
-<p>To do</p>
-</div>
-<div id="references" class="section level1">
+<div id="references" class="section level1 unnumbered">
 <h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-R-rmarkdown">
+<p>Allaire, JJ, Joe Cheng, Yihui Xie, Jonathan McPherson, Winston Chang, Jeff Allen, Hadley Wickham, Aron Atkins, Rob Hyndman, and Ruben Arslan. 2016. <em>Rmarkdown: Dynamic Documents for R</em>. <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
+</div>
+<div id="ref-R-magrittr">
+<p>Bache, Stefan Milton, and Hadley Wickham. 2014. <em>Magrittr: A Forward-Pipe Operator for R</em>. <a href="https://CRAN.R-project.org/package=magrittr" class="uri">https://CRAN.R-project.org/package=magrittr</a>.</p>
+</div>
+<div id="ref-R-wmf">
+<p>Keyes, Oliver, and Mikhail Popov. 2017. <em>Wmf: R Code for Wikimedia Foundation Internal Usage</em>. <a href="https://phabricator.wikimedia.org/diffusion/1821/" class="uri">https://phabricator.wikimedia.org/diffusion/1821/</a>.</p>
+</div>
+<div id="ref-R-base">
+<p>R Core Team. 2016. <em>R: A Language and Environment for Statistical Computing</em>. Vienna, Austria: R Foundation for Statistical Computing. <a href="https://www.R-project.org/" class="uri">https://www.R-project.org/</a>.</p>
+</div>
+<div id="ref-R-ggplot2">
+<p>Wickham, Hadley. 2009. <em>Ggplot2: Elegant Graphics for Data Analysis</em>. Springer-Verlag New York. <a href="http://ggplot2.org" class="uri">http://ggplot2.org</a>.</p>
+</div>
+<div id="ref-R-tidyr">
+<p>———. 2017. <em>Tidyr: Easily Tidy Data with ’Spread()’ and ’Gather()’ Functions</em>. <a href="https://CRAN.R-project.org/package=tidyr" class="uri">https://CRAN.R-project.org/package=tidyr</a>.</p>
+</div>
+<div id="ref-R-dplyr">
+<p>Wickham, Hadley, and Romain Francois. 2016. <em>Dplyr: A Grammar of Data Manipulation</em>. <a href="https://CRAN.R-project.org/package=dplyr" class="uri">https://CRAN.R-project.org/package=dplyr</a>.</p>
+</div>
+</div>
 </div>
 
-<div id="wmf" title="By Wikimedia Foundation (Wikimedia Foundation) [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0)], via Wikimedia Commons"></div>
+<div id="wmf" title="By Wikimedia Foundation (Wikimedia Foundation) [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0)], via Wikimedia Commons">
+</div>
 
 
 </div>
