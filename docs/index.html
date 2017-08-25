@@ -1071,6 +1071,8 @@ dplyr<span class="op">::</span><span class="kw">bind_rows</span>(<span class="st
 <span class="st">  </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(<span class="dt">x=</span>load_time)) <span class="op">+</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">scale_x_sqrt</span>() <span class="op">+</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">geom_density</span>(<span class="kw">aes</span>(<span class="dt">group=</span>group, <span class="dt">colour=</span>group, <span class="dt">fill=</span>group), <span class="dt">alpha=</span><span class="fl">0.3</span>) <span class="op">+</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">scale_color_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_fill_brewer</span>(<span class="st">&quot;Group&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>) <span class="op">+</span>
 <span class="st">  </span><span class="kw">labs</span>(<span class="dt">x =</span> <span class="st">&quot;Load Time (ms)&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Density&quot;</span>, <span class="dt">title =</span> <span class="st">&quot;Distribution of search result page load time by test group&quot;</span>) <span class="op">+</span>
 <span class="st">  </span><span class="kw">theme_min</span>()</code></pre></div>
 <div class="figure">

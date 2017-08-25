@@ -663,6 +663,8 @@ events %>%
   ggplot(aes(x=load_time)) + 
   scale_x_sqrt() + 
   geom_density(aes(group=group, colour=group, fill=group), alpha=0.3) + 
+  scale_color_brewer("Group", palette = "Set1") +
+  scale_fill_brewer("Group", palette = "Set1") +
   labs(x = "Load Time (ms)", y = "Density", title = "Distribution of search result page load time by test group") +
   theme_min()
 ```
