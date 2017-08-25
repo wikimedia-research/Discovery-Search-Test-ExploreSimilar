@@ -12,7 +12,7 @@ author:
 - affiliation: "Product Manager (Analysis, Search Frontend), Wikimedia Foundation"
   name: "Deb Tankersley"
 abstract: >
-  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.
+  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. More than 80% of hovers lasted less than 2 seconds, which means that the user was either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.
 output:
   html_document:
     includes:
@@ -586,7 +586,7 @@ hover_over %>%
 ```
 
 `r table_caps("Hover Time", display = "cite")` shows the approximate time users stay on the widget after they hover-on.
-More than 80% of hover-on last less than 2 seconds, which means they are either not interested in the related content at all or just hover-over by accident. 
+More than 80% of hovers lasted less than 2 seconds, which means that the user is either not interested in the related content or hovered over the links by accident. 
 ```{r hover_time}
 hover_over %>%
   group_by(hoverId) %>%
@@ -669,7 +669,7 @@ events %>%
 
 # Discussion
 
-We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. Since the time users spent on reading the similar information is too short, we doubt that about 80% of the hover-overs happened by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct but also not too visually obtrusive. Additionally, it would be helpful to record the position of the same-wiki result on the page when users hover-over or click on the related content under it.
+We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. More than 80% of hovers lasted less than 2 seconds, which means that the user is either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct but also not too visually obtrusive. Additionally, it would be helpful to record the position of the same-wiki result on the page when users hover-over or click on the related content under it.
 
 <!--
 # Acknowledgements
