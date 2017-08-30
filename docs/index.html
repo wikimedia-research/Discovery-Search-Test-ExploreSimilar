@@ -10,9 +10,9 @@
 
 
 
-<meta name="date" content="2017-08-25" />
+<meta name="date" content="2017-08-29" />
 
-<title>DRAFT: Test of the Explore Similar Widget</title>
+<title>Test of the Explore Similar Widget</title>
 
 <script src="index_files/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -280,7 +280,7 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">DRAFT: Test of the Explore Similar Widget</h1>
+<h1 class="title toc-ignore">Test of the Explore Similar Widget</h1>
 <h3 class="subtitle"><em>Providing users with related pages, categories and suggested languages in search results</em></h3>
 <h4 class="author"><em>Erik Bernhardson</em></h4>
 <address class="author_afil">
@@ -290,7 +290,7 @@ User Experience Engineer, Wikimedia Foundation<br><h4 class="author"><em>Chelsy 
 <address class="author_afil">
 Data Analyst, Wikimedia Foundation<br><h4 class="author"><em>Deb Tankersley</em></h4>
 <address class="author_afil">
-Product Manager (Analysis, Search Frontend), Wikimedia Foundation<br><h4 class="date"><em>25 August 2017</em></h4>
+Product Manager (Analysis, Search Frontend), Wikimedia Foundation<br><h4 class="date"><em>29 August 2017</em></h4>
 <div class="abstract">
 <p class="abstract">Abstract</p>
 <p>Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding ‘explore similar’ widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the ‘Related’ section most often, followed by ‘Categories’ and ‘Languages’ sections. More than 80% of hovers lasted less than 2 seconds, which means that the user was either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.</p>
@@ -327,15 +327,15 @@ $(function() {
 </div>
 <p>For the users who received the experimental user experience (UX), three new links would be added beside the green metadata on each search result: related pages, categories and languages. When hovered over, these link would expand the search result into a ‘card’ with related content (see Figure 1). These links would reveal the following related content:</p>
 <ul>
-<li>Up to 3 related page links containing metadata (as is available): thumbnail image, name of related page and metadata description</li>
-<li>Up to 9 links to categories that the article was tagged with</li>
-<li>Any other languages the page is available in</li>
+<li><p>Up to 3 related page links containing metadata (as is available): thumbnail image, name of related page and metadata description</p></li>
+<li><p>Up to 9 links to categories that the article was tagged with</p></li>
+<li><p>Any other languages the page is available in</p></li>
 </ul>
 <p>This extended content would be activated by hovering over one of the three links. Also, in order to avoid overcrowding the UI, these links would only be visible when hovering over the search result. There was one test group of users who received the experimental UX, and one control group that did not and received the currently existing search results page.</p>
 <p>The primary questions we wanted to answer are:</p>
 <ul>
-<li>Did users who saw the additional related content engage with those results?</li>
-<li>Was the overall engagement with search results better or worse compared to the controls?</li>
+<li><p>Did users who saw the additional related content engage with those results?</p></li>
+<li><p>Was the overall engagement with search results better or worse compared to the controls?</p></li>
 </ul>
 <p>On 30 June 2017 we deployed an A/B test on the desktop version of English Wikipedia to assess the efficacy of this feature. The test concluded on 24 July 2017, after a total of 5180 search sessions had been anonymously tracked.</p>
 </div>
@@ -348,7 +348,7 @@ $(function() {
 <div id="data" class="section level2">
 <h2>Data</h2>
 <p>1 in 1000 users are included in Event-logging (on English Wikipedia that’s about 2000 full-text searchers, according to <a href="https://phabricator.wikimedia.org/T163273">T163273</a>). Of those 1 in 1000 users, 1 in 2 are included in the test (that’s about 1000 sessions daily). Of those 1 in 2 users, 50% go in the test group (as described above), and the other 50% of users will go in the control group (that’s about 500 sessions for each bucket). However, we failed to notice that the sampling didn’t work as we expected – we got only about 100 sessions per day for each bucket. But we got enough data since we ran this test longer than planned – for 25 days.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#De-duplicating events...</span>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># De-duplicating events...</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">mutate</span>(
     <span class="dt">timestamp =</span> lubridate<span class="op">::</span><span class="kw">ymd_hms</span>(timestamp),
@@ -362,7 +362,7 @@ events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="kw">is.na</span>(load_time) <span class="op">|</span><span class="st"> </span>load_time <span class="op">&gt;=</span><span class="st"> </span><span class="dv">0</span>)
 
-<span class="co"># message(&quot;De-duplicating SERPs...&quot;)</span>
+<span class="co"># De-duplicating SERPs</span>
 SERPs &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">select</span>(<span class="kw">c</span>(session_id, page_id, query_hash, search_token)) <span class="op">%&gt;%</span>
@@ -374,28 +374,25 @@ events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span>dplyr<span class="op">::</span><span class="kw">left_join</span>(SERPs, <span class="dt">by =</span> <span class="st">&quot;page_id&quot;</span>)
 <span class="kw">rm</span>(SERPs) <span class="co"># to free up memory</span>
 
-<span class="co"># message(&quot;Removing events without an associated SERP (orphan clicks and check-ins)...&quot;)</span>
+<span class="co"># Removing events without an associated SERP (orphan clicks and check-ins)</span>
 n_evnt &lt;-<span class="st"> </span><span class="kw">nrow</span>(events)
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(<span class="kw">is.na</span>(serp_id) <span class="op">&amp;</span><span class="st"> </span><span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;visitPage&quot;</span>, <span class="st">&quot;checkin&quot;</span>)))) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove orphan click</span>
 <span class="st">  </span><span class="kw">group_by</span>(session_id) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="st">&quot;searchResultPage&quot;</span> <span class="op">%in%</span><span class="st"> </span>event) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove orphan &quot;visitPage&quot; and &quot;checkin&quot;</span>
 <span class="st">  </span>ungroup
-<span class="co"># cat(&quot; Removed &quot;, n_evnt - nrow(events), &quot; orphan (SERP-less) events.&quot;)</span>
 <span class="kw">rm</span>(n_evnt)
 
-<span class="co"># message(&quot;Removing sessions falling into multiple test groups&quot;)</span>
+<span class="co"># Removing sessions falling into multiple test groups</span>
 temp &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(session_id) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">summarize</span>(<span class="dt">unique_group =</span> <span class="kw">length</span>(<span class="kw">unique</span>(group)) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>)
-<span class="co"># cat(&quot; Removed &quot;, sum(!temp$unique_group), &quot; sessions falling into multiple test groups.&quot;)</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(session_id <span class="op">%in%</span><span class="st"> </span>temp<span class="op">$</span>session_id[temp<span class="op">$</span>unique_group])
 <span class="kw">rm</span>(temp)
 
 <span class="co"># Number of wikis in the test</span>
 n_wiki &lt;-<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(events<span class="op">$</span>wiki))
-<span class="co"># message(&quot;Number of wikis in the test: &quot;, n_wiki)</span>
 
 <span class="co"># Remove session with more than 50 searches and only serp</span>
 spider_session &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
@@ -406,7 +403,6 @@ spider_session &lt;-<span class="st"> </span>events <span class="op">%&gt;%</spa
 <span class="st">  </span>{.<span class="op">$</span>session_id}
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(session_id <span class="op">%in%</span><span class="st"> </span>spider_session))
-<span class="co"># cat(&quot; Removed &quot;, length(spider_session), &quot; sessions with more than 50 searches and only serp.&quot;)</span>
 
 <span class="co"># Scroll on serp</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
@@ -421,7 +417,7 @@ events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">mutate</span>(<span class="dt">group =</span> <span class="kw">ifelse</span>(group <span class="op">==</span><span class="st"> &quot;explore_similar_control&quot;</span>, <span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Test&quot;</span>))</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">load</span>(<span class="kw">path</span>(<span class="st">&quot;data/fulltext_from_auto.RData&quot;</span>))
 
-<span class="co"># message(&quot;De-duplicating events...&quot;)</span>
+<span class="co"># De-duplicating events</span>
 fulltext_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">mutate</span>(
     <span class="dt">timestamp =</span> lubridate<span class="op">::</span><span class="kw">ymd_hms</span>(timestamp),
@@ -431,12 +427,7 @@ fulltext_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class=
 <span class="st">  </span><span class="kw">arrange</span>(session_id, event_id, timestamp) <span class="op">%&gt;%</span>
 <span class="st">  </span>dplyr<span class="op">::</span><span class="kw">distinct</span>(session_id, event_id, <span class="dt">.keep_all =</span> <span class="ot">TRUE</span>)
 
-<span class="co"># Data summary</span>
-<span class="co"># fulltext_from_auto %&gt;%</span>
-<span class="co">#   group_by(group) %&gt;%</span>
-<span class="co">#   summarize(n_session = length(unique(session_id)), n_serp = length(unique(page_id)))</span>
-
-<span class="co"># message(&quot;Group by SERPs...&quot;)</span>
+<span class="co"># Group by SERPs</span>
 serp_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">arrange</span>(date, session_id, page_id, timestamp) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(wiki, group, session_id, page_id) <span class="op">%&gt;%</span>
@@ -445,13 +436,12 @@ serp_from_auto &lt;-<span class="st"> </span>fulltext_from_auto <span class="op"
             <span class="dt">status =</span> <span class="kw">ifelse</span>(max_checkin_serp <span class="op">==</span><span class="st"> &quot;420&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>)
   )
 
-<span class="co"># message(&quot;Join with events...&quot;)</span>
+<span class="co"># Join with events</span>
 events &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span>dplyr<span class="op">::</span><span class="kw">left_join</span>(serp_from_auto, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;group&quot;</span>, <span class="st">&quot;wiki&quot;</span>, <span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;page_id&quot;</span>)) <span class="op">%&gt;%</span>
-<span class="co"># length(unique(events$page_id[events$from_autocomplete == TRUE]))</span>
-<span class="co"># some serp from auto couldn&#39;t find a match because their sessions are identified as spider sessions</span>
-<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">from_autocomplete =</span> <span class="kw">ifelse</span>(<span class="kw">is.na</span>(from_autocomplete), <span class="ot">FALSE</span>, from_autocomplete))</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># message(&quot;Aggregating by search...&quot;)</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">from_autocomplete =</span> <span class="kw">ifelse</span>(<span class="kw">is.na</span>(from_autocomplete), <span class="ot">FALSE</span>, from_autocomplete))
+<span class="co"># some serp from auto couldn&#39;t find a match because their sessions are identified as spider sessions</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Aggregating by search</span>
 searches &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(<span class="op">!</span>(<span class="kw">is.na</span>(serp_id))) <span class="op">%&gt;%</span><span class="st"> </span><span class="co"># remove visitPage and checkin events</span>
 <span class="st">  </span><span class="kw">arrange</span>(date, session_id, serp_id, timestamp) <span class="op">%&gt;%</span>
@@ -463,7 +453,7 @@ searches &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
     <span class="dt">has_scroll_serp =</span> <span class="kw">sum</span>(n_scroll_serp, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>) <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>,
     <span class="st">`</span><span class="dt">got same-wiki results</span><span class="st">`</span> =<span class="st"> </span><span class="kw">any</span>(<span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> &quot;TRUE&quot;</span>, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>),
     <span class="dt">engaged =</span> <span class="kw">any</span>(event <span class="op">!=</span><span class="st"> &quot;searchResultPage&quot;</span>) <span class="op">||</span><span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(page_id[event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>])) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span> <span class="op">||</span><span class="st"> </span><span class="kw">any</span>(has_scroll_serp),
-    <span class="dt">engaged_without_es =</span> <span class="kw">any</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;searchResultPage&quot;</span>, <span class="st">&quot;esclick&quot;</span>, <span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>))) <span class="op">||</span><span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(page_id[event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>])) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>, <span class="co">#|| any(has_scroll_serp),</span>
+    <span class="dt">engaged_without_es =</span> <span class="kw">any</span>(<span class="op">!</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;searchResultPage&quot;</span>, <span class="st">&quot;esclick&quot;</span>, <span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>))) <span class="op">||</span><span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(page_id[event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>])) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>, 
     <span class="st">`</span><span class="dt">same-wiki clickthrough</span><span class="st">`</span> =<span class="st"> &quot;click&quot;</span> <span class="op">%in%</span><span class="st"> </span>event,
     <span class="st">`</span><span class="dt">other clickthrough</span><span class="st">`</span> =<span class="st"> </span><span class="kw">sum</span>(<span class="kw">grepl</span>(<span class="st">&quot;click&quot;</span>, event) <span class="op">&amp;</span><span class="st"> </span>event <span class="op">!=</span><span class="st"> &quot;click&quot;</span>),
     <span class="st">`</span><span class="dt">no. same-wiki results clicked</span><span class="st">`</span> =<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(event_position[event <span class="op">==</span><span class="st"> &quot;click&quot;</span>])),
@@ -475,7 +465,7 @@ searches &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
   ) <span class="op">%&gt;%</span>
 <span class="st">  </span>ungroup
 
-<span class="co"># message(&quot;Processing explore-similar clicks...&quot;)</span>
+<span class="co"># Processing explore-similar clicks</span>
 esclick_result &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;esclick&quot;</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">cbind</span>(., <span class="kw">do.call</span>(dplyr<span class="op">::</span>bind_rows, <span class="kw">lapply</span>(.<span class="op">$</span>event_extraParams, parse_extraParams, <span class="dt">action =</span> <span class="st">&quot;esclick&quot;</span>))) <span class="op">%&gt;%</span>
@@ -485,7 +475,7 @@ searches &lt;-<span class="st"> </span>esclick_result <span class="op">%&gt;%</s
 <span class="st">  </span><span class="kw">summarize</span>(<span class="dt">with_esclick =</span> <span class="ot">TRUE</span>) <span class="op">%&gt;%</span>
 <span class="st">  </span>dplyr<span class="op">::</span><span class="kw">right_join</span>(searches, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;group&quot;</span>, <span class="st">&quot;wiki&quot;</span>, <span class="st">&quot;session_id&quot;</span>, <span class="st">&quot;serp_id&quot;</span>))
 
-<span class="co"># message(&quot;Processing explore-similar hover events...&quot;)</span>
+<span class="co"># Processing explore-similar hover events</span>
 hover_over &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">keep_where</span>(event <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>)) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">cbind</span>(., <span class="kw">do.call</span>(dplyr<span class="op">::</span>bind_rows, <span class="kw">lapply</span>(.<span class="op">$</span>event_extraParams, parse_extraParams, <span class="dt">action =</span> <span class="kw">c</span>(<span class="st">&quot;hover-on&quot;</span>, <span class="st">&quot;hover-off&quot;</span>)))) <span class="op">%&gt;%</span>
@@ -678,10 +668,10 @@ cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2) <span
 <strong>Figure 5</strong>: Clickthrough rates of experimental groups and clickthrough rate among searches with hover-over.
 </p>
 </div>
-<p>After we show the search result page to a user, if the user doesn’t do anything – no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In Figure 6, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apple to apple, because:</p>
+<p>After we show the search result page to a user, if the user doesn’t do anything – no click, scroll, hover-over, not reload the search result page or check the next page of results, we will say this search is abandoned. In Figure 6, the left graph shows the proportion of searches without any actions on the result page, and the abandon rate of test group is significantly lower. However, the left graph is not comparing apples to apples, because:</p>
 <ul>
-<li>The control group didn’t track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn’t happen by accident. In other words, the control group users might move their mouse on the pages, but they didn’t get recorded;</li>
-<li>According to our eventlogging schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although Figure 7 shows that the proportion of search result pages with scroll in the test group is not significantly higher.).</li>
+<li><p>The control group didn’t track hover-over and explore similar clicks and we cannot prove that the hover-over in test group didn’t happen by accident. In other words, the control group users might move their mouse on the pages, but they didn’t get recorded;</p></li>
+<li><p>According to our EL schema, the more actions are recorded, the more likely a scroll can be recorded, thus a scroll in the test group is more likely to be tracked (Although Figure 7 shows that the proportion of search result pages with scroll in the test group is not significantly higher.).</p></li>
 </ul>
 <p>Therefore we exclude hover-over, explore similar clicks and scrolls, and generate the right graph which shows the proportion of searches that have no click, reload or page-turn. There is no significant difference between the two groups, which means the test group did not have more search result page reload, page-turn and clicks of any kind (same-wiki, cross-wiki or other).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p1 &lt;-<span class="st"> </span>searches <span class="op">%&gt;%</span>
@@ -732,9 +722,6 @@ cowplot<span class="op">::</span><span class="kw">plot_grid</span>(p1, p2)</code
 </div>
 <p>Figure 8 shows that the time users spent on search result pages are not significantly different.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">keep_where</span>(event <span class="op">==</span><span class="st"> &quot;searchResultPage&quot;</span>, from_autocomplete <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>, <span class="st">`</span><span class="dt">some same-wiki results</span><span class="st">`</span> <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>)
-<span class="co"># cat(&quot;There are&quot;, length(unique(temp$page_id)), &quot;fulltext search result pages from autocomplete.&quot;, </span>
-<span class="co">#     length(unique(temp$page_id[temp$group == &quot;explore_similar_control&quot;])), &quot;of them are in control group and&quot;, </span>
-<span class="co">#     length(unique(temp$page_id[temp$group == &quot;explore_similar_test&quot;])), &quot;of them are in test group.&quot;)</span>
 temp<span class="op">$</span>SurvObj &lt;-<span class="st"> </span><span class="kw">with</span>(temp, survival<span class="op">::</span><span class="kw">Surv</span>(max_checkin_serp, status <span class="op">==</span><span class="st"> </span><span class="dv">2</span>))
 fit &lt;-<span class="st"> </span>survival<span class="op">::</span><span class="kw">survfit</span>(SurvObj <span class="op">~</span><span class="st"> </span>group, <span class="dt">data =</span> temp)
 ggsurv &lt;-<span class="st"> </span>survminer<span class="op">::</span><span class="kw">ggsurvplot</span>(
@@ -1020,8 +1007,8 @@ Proportion
 <h2>Return Rate</h2>
 <p>Users may click back to the search result page directly after they clickthrough to an article (within 10 mins). We computed two kinds of return rate:</p>
 <ul>
-<li>Among users with at least a click in their search, the proportion of searches that return to the same search page</li>
-<li>Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different search result page but in the same session)</li>
+<li><p>Among users with at least a click in their search, the proportion of searches that return to the same search page</p></li>
+<li><p>Among users with at least a click in their search session, the proportion of sessions that return to search for different things (different search result page but in the same session)</p></li>
 </ul>
 <p>From Figure 9, we can see the return rates are not significantly different between experimental groups.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">returnRate_to_same_search &lt;-<span class="st"> </span>events <span class="op">%&gt;%</span>
@@ -1086,11 +1073,10 @@ dplyr<span class="op">::</span><span class="kw">bind_rows</span>(<span class="st
 <div id="discussion" class="section level1">
 <h1>Discussion</h1>
 <p>We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the ‘Related’ section most often, followed by ‘Categories’ and ‘Languages’ sections. More than 80% of hovers lasted less than 2 seconds, which means that the user is either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct but also not too visually obtrusive. Additionally, it would be helpful to record the position of the same-wiki result on the page when users hover-over or click on the related content under it.</p>
-<!--
-# Acknowledgements
-
-To do
--->
+</div>
+<div id="acknowledgements" class="section level1">
+<h1>Acknowledgements</h1>
+<p>Finally, we would like to thank our colleague Mikhail Popov (Data Analyst, Wikimedia Foundation) for his review and feedback on this report.</p>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>

@@ -25,10 +25,12 @@ safe_ordinals <- function(x) {
   output[!na_mask] <- vapply(x[!na_mask], toOrdinal::toOrdinal, "")
   return(output)
 }
+
 pluralize <- function(singular, n) {
   plural <- paste0(singular, "s") # TODO: logic for ending
   return(c(singular, plural)[(n != 1) + 1])
 }
+
 Pluralize <- function(n, singular) {
   return(paste(n, pluralize(singular, n)))
 }
@@ -99,7 +101,7 @@ pointrange_chart <- function(data = NULL, y_lab = NULL, title = NULL, caption = 
     ggplot2::scale_color_brewer("Group", palette = "Set1") +
     ggplot2::labs(x = NULL, y = y_lab, title = title, subtitle = subtitle) +
     ggplot2::geom_text(
-      aes(label = sprintf("%.2f%%", 100 * mean), y = upper + 0.0025, vjust = "bottom"), 
+      aes(label = sprintf("%.2f%%", 100 * mean), y = upper + 0.0025, vjust = "bottom"),
       position = position_dodge(width = 1)
       )
 }
