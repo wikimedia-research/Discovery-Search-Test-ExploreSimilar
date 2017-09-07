@@ -565,11 +565,12 @@ rm(temp)
 
 ## Interactions with explore similar widget
 
-There are `r sum(hover_over$event == "hover-on")` hover-on actions and `r table_caps("Hover Counts", display = "cite")` shows the breakdown by section and number of results shown. 12.7% (92) hovers sees 0 result, most of them are in the "Languages" section. 44.1% (319) hover on the "Related" section, 34% (246) hover on the "Categories" section and 21.9% (158) hover on the "Language" section.
+There are `r length(unique(hover_over$hoverId[hover_over$event == "hover-on"]))` hover-on actions and `r table_caps("Hover Counts", display = "cite")` shows the breakdown by section and number of results shown. 12.8% (92) hovers sees 0 result, most of them are in the "Languages" section. 44.1% (318) hover on the "Related" section, 34% (245) hover on the "Categories" section and 21.9% (158) hover on the "Language" section.
 
 ```{r hover_summary, results='asis', echo=FALSE}
 hover_over %>%
   keep_where(event == "hover-on") %>%
+  dplyr::distinct(hoverId, .keep_all = TRUE) %>%
   mutate(results = ifelse(results >= 5, "5+ results", Pluralize(results, "result"))) %>%
   group_by(section, results) %>%
   tally %>%
@@ -578,12 +579,12 @@ hover_over %>%
   fable(format_caption(table_caps, "Hover Counts"))
 ```
 
-`r table_caps("Hover Time", display = "cite")` shows the approximate time users stay on the widget after they hover-on.
-More than 80% of hovers lasted less than 2 seconds, which means that the user is either not interested in the related content or hovered over the links by accident. 
+`r table_caps("Hover Time", display = "cite")`[^hover_time] shows the approximate time users stay on the widget after they hover-on.
+More than 80% of hovers lasted less than 2 seconds, which means that the user is either not interested in the related content or hovered over the links by accident.
 ```{r hover_time}
 hover_over %>%
   group_by(hoverId) %>%
-  keep_where(length(event_id) == 2) %>%
+  keep_where(length(event_id) == 2 & all(c("hover-on", "hover-off") %in% event)) %>%
   arrange(timestamp) %>%
   summarize(`Dwell Time` = difftime(max(timestamp), min(timestamp), units="secs")) %>%
   mutate(`Dwell Time` = ifelse(`Dwell Time` > 5, "6+ secs", paste(`Dwell Time`, "secs"))) %>%
@@ -592,6 +593,8 @@ hover_over %>%
   mutate(Proportion = paste0(round(`Number of Hover-over` / sum(`Number of Hover-over`) * 100, 2), "%")) %>%
   fable(format_caption(table_caps, "Hover Time"))
 ```
+
+[^hover_time]: We computed the dwell time for 389 hover-over events. There are 330 hover-on events without a paired hover-off event because the users moved their mouses over the links so fast that javascript did not fire the hover-off event for them. And there are 2 pairs with duplicated hover-on events but only 1 hover-off event. Therefore, we cannot computed the dwell time for these 332 hover-over event.
 
 There are only 3 valid clicks on the explore similar results from 3 different sessions. There are 1 click on the first "Related" result and 2 clicks on the second "Related" result.
 
