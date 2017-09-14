@@ -11,13 +11,6 @@ author:
   name: Deb Tankersley
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  pdf_document:
-    citation_package: natbib
-    fig_height: 6
-    fig_width: 10
-    keep_tex: yes
-    latex_engine: xelatex
-    template: svm-latex-ms.tex
   html_document:
     code_folding: hide
     css: style.css
@@ -37,6 +30,13 @@ output:
     toc_depth: 4
     toc_float:
       collapsed: no
+  pdf_document:
+    citation_package: natbib
+    fig_height: 6
+    fig_width: 10
+    keep_tex: yes
+    latex_engine: xelatex
+    template: svm-latex-ms.tex
 fontsize: 11pt
 geometry: margin=1in
 header-includes:
@@ -49,7 +49,7 @@ bibliography: bibliography.bib
 subtitle: Providing users with related pages, categories and suggested languages in
   search results
 abstract: |
-  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. More than 80% of hovers lasted less than 2 seconds, which means that the user was either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the simiar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.
+  Wikimedia Engineering’s Discovery’s Search team ran an A/B test from 30 Jun 2017 to 24 Jul 2017 to assess the effectiveness of adding 'explore similar' widget to provide randomly selected users on English Wikipedia with related pages, categories and suggested languages in addition to each search result. We found that about 10% of users hover over the widget but almost no one clicked on the similar result links. Users hover over the 'Related' section most often, followed by 'Categories' and 'Languages' sections. More than 80% of hovers lasted less than 2 seconds, which means that the user was either not interested in the related content or hovered over the links by accident. Our analysis also showed that this widget did not improve user engagement, but it did not hurt user experience neither. Given the fact that very few users saw the similar results and we got positive feedback from usertesting.com, we suggest making the feature to be more visually distinct and then run another test.
 ---
 ```{js, echo = FALSE}
 $(function() {
